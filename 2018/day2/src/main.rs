@@ -66,7 +66,7 @@ ababab";
     }
 
     #[test]
-    fn part2_example() {
+    fn test_part2() {
         let ex = "\
 abcde
 fghij

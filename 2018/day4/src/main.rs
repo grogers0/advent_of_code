@@ -109,12 +109,12 @@ mod tests {
 [1518-11-05 00:55] wakes up";
 
     #[test]
-    fn part1_example() {
+    fn test_part1() {
         assert_eq!(part1(EX), 240);
     }
 
     #[test]
-    fn part2_example() {
+    fn test_part2() {
         assert_eq!(part2(EX), 4455);
     }
 
