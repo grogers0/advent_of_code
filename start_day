@@ -1,0 +1,73 @@
+#!/bin/bash
+
+set -euo pipefail
+
+YEAR=$1
+DAY=$2
+
+if ! [[ $YEAR =~ 20[0-9]{2} ]]; then
+    echo "usage: start_day <year> <day>" 1>&2
+    exit 1
+fi
+if ! [[ $DAY =~ [1-9]|1[0-9]|2[0-5] ]]; then
+    echo "usage: start_day <year> <day>" 1>&2
+    exit 1
+fi
+
+while [[ ! -d .git && $PWD != "/" ]]; do
+    cd ..
+done
+if [[ $PWD == "/" ]]; then
+    echo "error: Not inside the advent_of_code git repository" 1>&2
+    exit 1
+fi
+
+mkdir -p $YEAR/day$DAY/
+cd $YEAR/day$DAY/
+mkdir -p src/
+cat > Cargo.toml <<EOF
+[package]
+name = "day$DAY-$YEAR"
+version = "0.1.0"
+authors = ["$(git config user.name) <$(git config user.email)>"]
+edition = "2018"
+
+[dependencies]
+EOF
+# Share target dirs to avoid recompiling common dependencies like regex
+ln -sf ../../target/ target
+cat > src/main.rs <<EOF
+use std::io::{self, Read};
+
+fn part1(input: &str) -> usize {
+    0 // FIXME
+}
+
+fn part2(input: &str) -> usize {
+    0 // FIXME
+}
+
+fn main() {
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input).unwrap();
+
+    println!("{}", part1(&input));
+    println!("{}", part2(&input));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() {
+        // FIXME
+    }
+
+    #[test]
+    fn test_part2() {
+        // FIXME
+    }
+}
+EOF
+aoc fetch --day $DAY > input
