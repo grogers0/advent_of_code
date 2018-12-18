@@ -7,9 +7,9 @@ fn parse(input: &str) -> Vec<Vec<char>> {
         .collect()
 }
 
-fn char_counts(mut chars: impl Iterator<Item=char>) -> BTreeMap<char, usize> {
+fn char_counts(chars: impl Iterator<Item=char>) -> BTreeMap<char, usize> {
     let mut counts = BTreeMap::new();
-    while let Some(ch) = chars.next() {
+    for ch in chars {
         counts.entry(ch).and_modify(|cnt| *cnt += 1).or_insert(1);
     }
     counts    
