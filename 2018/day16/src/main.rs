@@ -4,19 +4,10 @@ use std::io::{self, Read};
 use lazy_static::lazy_static;
 use regex::Regex;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum Op {
-    Addr, Addi, // C = rA + (r/v)B
-    Mulr, Muli, // C = rA * (r/v)B
-    Banr, Bani, // C = rA & (r/v)B
-    Borr, Bori, // C = rA | (r/v)B
-    Setr, Seti, // C = (r/v)A // B ignored
-    Gtir, Gtri, Gtrr, // if (r/v)A > (r/v)B { C = 1 } else { C = 0 }
-    Eqir, Eqri, Eqrr // if (r/v)A == (r/v)B { C = 1 } else { C = 0 }
-}
+use day16_2018::*;
 
 #[derive(Clone, Debug)]
-struct OpcodeSample {
+pub struct OpcodeSample {
     before: [usize; 4],
     instruction: [usize; 4],
     after: [usize; 4]
@@ -60,27 +51,6 @@ fn parse(input: &str) -> (Vec<OpcodeSample>, Vec<[usize; 4]>) {
     (samples, program)
 }
 
-fn execute_decoded(registers: &mut [usize; 4], op: Op, a: usize, b: usize, c: usize) {
-    match op {
-        Op::Addr => registers[c] = registers[a] + registers[b],
-        Op::Addi => registers[c] = registers[a] + b,
-        Op::Mulr => registers[c] = registers[a] * registers[b],
-        Op::Muli => registers[c] = registers[a] * b,
-        Op::Banr => registers[c] = registers[a] & registers[b],
-        Op::Bani => registers[c] = registers[a] & b,
-        Op::Borr => registers[c] = registers[a] | registers[b],
-        Op::Bori => registers[c] = registers[a] | b,
-        Op::Setr => registers[c] = registers[a],
-        Op::Seti => registers[c] = a,
-        Op::Gtir => registers[c] = if a > registers[b] { 1 } else { 0 },
-        Op::Gtri => registers[c] = if registers[a] > b { 1 } else { 0 },
-        Op::Gtrr => registers[c] = if registers[a] > registers[b] { 1 } else { 0 },
-        Op::Eqir => registers[c] = if a == registers[b] { 1 } else { 0 },
-        Op::Eqri => registers[c] = if registers[a] == b { 1 } else { 0 },
-        Op::Eqrr => registers[c] = if registers[a] == registers[b] { 1 } else { 0 }
-    }
-}
-
 fn all_ops() -> BTreeSet<Op> {
     vec![Op::Addr, Op::Addi, Op::Mulr, Op::Muli, Op::Banr, Op::Bani, Op::Borr,
          Op::Bori, Op::Setr, Op::Seti, Op::Gtir, Op::Gtri, Op::Gtrr, Op::Eqir,
@@ -90,7 +60,7 @@ fn all_ops() -> BTreeSet<Op> {
 fn possible_ops(before: [usize; 4], after: [usize; 4], [_, a, b, c]: [usize; 4]) -> BTreeSet<Op> {
     all_ops().into_iter().filter(|op| {
         let mut registers = before.clone();
-        execute_decoded(&mut registers, *op, a, b, c);
+        execute_op(&mut registers, *op, a, b, c);
         registers == after
     }).collect()
 }
@@ -134,7 +104,7 @@ fn part2(input: &str) -> usize {
 
     for [opcode, a, b, c] in program {
         let op = opcodes[opcode];
-        execute_decoded(&mut registers, op, a, b, c);
+        execute_op(&mut registers, op, a, b, c);
     }
 
     registers[0]
