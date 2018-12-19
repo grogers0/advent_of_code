@@ -60,8 +60,8 @@ fn calc_part2(input: &str, num_workers: usize, base_time: usize) -> usize {
             workers.insert(node, time + step_time(node, base_time));
         } else {
             assert!(!workers.is_empty());
-            let (node, next_time) = workers.iter().min_by_key(|(_,t)| *t).unwrap();
-            let (node, next_time) = (*node, *next_time); // FIXME - better way to do this?
+            let (node, next_time) = workers.iter()
+                .map(|(n,t)| (*n, *t)).min_by_key(|(_,t)| *t).unwrap();
             assert!(next_time >= time);
             time = next_time;
             workers.remove(&node);
