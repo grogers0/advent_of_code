@@ -49,81 +49,62 @@ fn parse(input: &str) -> (BTreeMap<usize, Compare>, Vec<Start>) {
     (comparisons, values)
 }
 
-fn calc_part1(input: &str, terminal_values: (usize, usize)) -> usize {
+fn give(value: usize, give_to: GiveTo, bots: &mut BTreeMap<usize, Vec<usize>>,
+        output: &mut BTreeMap<usize, Vec<usize>>, queue: &mut VecDeque<usize>) {
+    match give_to {
+        GiveTo::Bot(bot) => {
+            bots.entry(bot).and_modify(|values| values.push(value)).or_insert(vec![value]);
+            queue.push_back(bot);
+        },
+        GiveTo::Output(bin) => {
+            output.entry(bin).and_modify(|values| values.push(value)).or_insert(vec![value]);
+        }
+    }
+}
+
+// Returns last bot compared
+fn execute(input: &str, output: &mut BTreeMap<usize, Vec<usize>>, stop_comp: Option<(usize, usize)>) -> usize {
     let (comparisons, values) = parse(input);
     let mut queue = VecDeque::new();
-    let mut output = BTreeMap::<usize, Vec<usize>>::new();
     let mut bots = BTreeMap::<usize, Vec<usize>>::new();
     for start in values {
         queue.push_back(start.bot);
         bots.entry(start.bot).and_modify(|values| values.push(start.value)).or_insert(vec![start.value]);
     }
+    let mut last_bot = 0;
     while let Some(bot) = queue.pop_front() {
         if !bots.contains_key(&bot) { continue; }
         if bots[&bot].len() <= 1 { continue; }
         assert_eq!(bots[&bot].len(), 2);
 
-        let low = *bots[&bot].iter().min().unwrap();
-        let high = *bots[&bot].iter().max().unwrap();
-        if low == terminal_values.0 && high == terminal_values.1 {
-            return bot
-        }
-        bots.remove(&bot);
-        match comparisons[&bot].low {
-            GiveTo::Bot(lowbot) => {
-                bots.entry(lowbot).and_modify(|values| values.push(low)).or_insert(vec![low]);
-                queue.push_back(lowbot);
-            },
-            GiveTo::Output(bin) => { output.entry(bin).and_modify(|values| values.push(low)).or_insert(vec![low]); }
-        }
-        match comparisons[&bot].high {
-            GiveTo::Bot(highbot) => {
-                bots.entry(highbot).and_modify(|values| values.push(high)).or_insert(vec![high]);
-                queue.push_back(highbot);
-            },
-            GiveTo::Output(bin) => { output.entry(bin).and_modify(|values| values.push(high)).or_insert(vec![high]); }
+        last_bot = bot;
+        let bot_vals = bots.remove(&bot).unwrap();
+        let low_val = *bot_vals.iter().min().unwrap();
+        give(low_val, comparisons[&bot].low, &mut bots, output, &mut queue);
+        let high_val = *bot_vals.iter().max().unwrap();
+        give(high_val, comparisons[&bot].high, &mut bots, output, &mut queue);
+
+        if let Some((low_stop, high_stop)) = stop_comp {
+            if low_val == low_stop && high_val == high_stop {
+                break;
+            }
         }
     }
-    unreachable!()
+    last_bot
+}
+
+fn calc_part1(input: &str, stop_comp: (usize, usize)) -> usize {
+    let mut output = BTreeMap::new();
+    execute(input, &mut output, Some(stop_comp))
 }
 
 fn part1(input: &str) -> usize {
     calc_part1(input, (17, 61))
 }
 
-// FIXME - really hacky copy/paste but too lazy to fix now
 fn part2(input: &str) -> usize {
-    let (comparisons, values) = parse(input);
-    let mut queue = VecDeque::new();
-    let mut output = BTreeMap::<usize, Vec<usize>>::new();
-    let mut bots = BTreeMap::<usize, Vec<usize>>::new();
-    for start in values {
-        queue.push_back(start.bot);
-        bots.entry(start.bot).and_modify(|values| values.push(start.value)).or_insert(vec![start.value]);
-    }
-    while let Some(bot) = queue.pop_front() {
-        if !bots.contains_key(&bot) { continue; }
-        if bots[&bot].len() <= 1 { continue; }
-        assert_eq!(bots[&bot].len(), 2);
-
-        let low = *bots[&bot].iter().min().unwrap();
-        let high = *bots[&bot].iter().max().unwrap();
-        bots.remove(&bot);
-        match comparisons[&bot].low {
-            GiveTo::Bot(lowbot) => {
-                bots.entry(lowbot).and_modify(|values| values.push(low)).or_insert(vec![low]);
-                queue.push_back(lowbot);
-            },
-            GiveTo::Output(bin) => { output.entry(bin).and_modify(|values| values.push(low)).or_insert(vec![low]); }
-        }
-        match comparisons[&bot].high {
-            GiveTo::Bot(highbot) => {
-                bots.entry(highbot).and_modify(|values| values.push(high)).or_insert(vec![high]);
-                queue.push_back(highbot);
-            },
-            GiveTo::Output(bin) => { output.entry(bin).and_modify(|values| values.push(high)).or_insert(vec![high]); }
-        }
-    }
+    let mut output = BTreeMap::new();
+    execute(input, &mut output, None);
     output[&0][0] * output[&1][0] * output[&2][0]
 }
 
