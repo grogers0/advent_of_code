@@ -100,7 +100,7 @@ impl Regex {
 #[derive(Clone, Debug)]
 struct Map {
     map: Vec<Vec<char>>,
-    start_offset: (usize, usize)
+    offset: (usize, usize)
 }
 
 impl Map {
@@ -109,15 +109,16 @@ impl Map {
         let mut pos = (1, 1);
 
         map.fill(&mut pos, regex);
+        assert_eq!(map.map[map.offset.1][map.offset.0], 'X');
         map.seal();
         map
     }
 
     fn fill(&mut self, pos: &mut (usize, usize), regex: &Regex) {
-        match regex {
-            Regex::Dir(dir) => self.fill_dir(pos, *dir),
-            Regex::Seq(seq) => self.fill_seq(pos, seq),
-            Regex::Branch(branch) => self.fill_branch(*pos, branch)
+        if let Regex::Seq(seq) = regex {
+            self.fill_seq(pos, seq);
+        } else {
+            unreachable!()
         }
     }
 
@@ -148,17 +149,26 @@ impl Map {
 
     fn fill_seq(&mut self, pos: &mut (usize, usize), seq: &Vec<Box<Regex>>) {
         let mut seq_iter = seq.iter();
-        for regex in seq.iter() {
-            self.fill(pos, &**regex);
+        while let Some(regex) = seq_iter.next() {
+            match &**regex {
+                Regex::Dir(dir) => self.fill_dir(pos, *dir),
+                Regex::Branch(branches) => {
+                    self.fill_branch(*pos, branches, &seq_iter.cloned().collect());
+                    break;
+                },
+                _ => unreachable!()
+            }
         }
     }
 
-    // FIXME this still doesn't work, we need to also visit everything beyond the branch in the
-    // previous seq
-    fn fill_branch(&mut self, init_pos: (usize, usize), branch: &Vec<Box<Regex>>) {
-        for regex in branch.iter() {
+    fn fill_branch(&mut self, init_pos: (usize, usize), branches: &Vec<Box<Regex>>, remaining_seq: &Vec<Box<Regex>>) {
+        let init_offset = self.offset;
+        for branch in branches.iter() {
             let mut pos = init_pos;
-            self.fill(&mut pos, &**regex);
+            pos.0 += self.offset.0 - init_offset.0;
+            pos.1 += self.offset.1 - init_offset.1;
+            self.fill(&mut pos, &**branch);
+            self.fill_seq(&mut pos, remaining_seq);
         }
     }
 
@@ -188,7 +198,7 @@ impl Map {
         self.map.insert(0, Self::room_row(width));
         self.map.insert(0, Self::wall_row(width));
         pos.1 += 2;
-        self.start_offset.1 += 2;
+        self.offset.1 += 2;
     }
 
     fn push_row_south_if_needed(&mut self, pos: &(usize, usize)) {
@@ -210,7 +220,7 @@ impl Map {
         self.map[height-1].insert(0, '?');
         self.map[height-1].insert(0, '#');
         pos.0 += 2;
-        self.start_offset.0 += 2;
+        self.offset.0 += 2;
     }
 
     fn push_col_east_if_needed(&mut self, pos: &(usize, usize)) {
@@ -239,7 +249,7 @@ impl Map {
             map: vec![vec!['#', '?', '#'],
                       vec!['?', 'X', '?'],
                       vec!['#', '?', '#']],
-            start_offset: (1, 1)
+            offset: (1, 1)
         }
     }
 }
@@ -260,8 +270,8 @@ impl fmt::Display for Map {
 
 
 fn part1(input: &str) -> usize {
-    let regex = Regex::parse(input);
-    println!("{}", regex);
+    let map = Map::generate(&Regex::parse(input));
+
     0 
 }
 
@@ -289,7 +299,6 @@ mod tests {
 #-###
 #.|X#
 #####");
-        println!("{}", Map::generate(&Regex::parse("^ENWWW(NEEE|SSE(EE|N))$")));
         assert_eq!(&format!("{}", Map::generate(&Regex::parse("^ENWWW(NEEE|SSE(EE|N))$"))), "\
 #########
 #.|.|.|.#
@@ -300,17 +309,57 @@ mod tests {
 #-#-#####
 #.|.|.|.#
 #########");
+        assert_eq!(&format!("{}", Map::generate(&Regex::parse("^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$"))), "\
+###########
+#.|.#.|.#.#
+#-###-#-#-#
+#.|.|.#.#.#
+#-#####-#-#
+#.#.#X|.#.#
+#-#-#####-#
+#.#.|.|.|.#
+#-###-###-#
+#.|.|.#.|.#
+###########");
+        assert_eq!(&format!("{}", Map::generate(&Regex::parse("^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$"))), "\
+#############
+#.|.|.|.|.|.#
+#-#####-###-#
+#.#.|.#.#.#.#
+#-#-###-#-#-#
+#.#.#.|.#.|.#
+#-#-#-#####-#
+#.#.#.#X|.#.#
+#-#-#-###-#-#
+#.|.#.|.#.#.#
+###-#-###-#-#
+#.|.#.|.|.#.#
+#############");
+        assert_eq!(&format!("{}", Map::generate(&Regex::parse("^WSSEESWWWNW(S|NENNEEEENN(ESSSSW(NWSW|SSEN)|WSWWN(E|WWS(E|SS))))$"))), "\
+###############
+#.|.|.|.#.|.|.#
+#-###-###-#-#-#
+#.|.#.|.|.#.#.#
+#-#########-#-#
+#.#.|.|.|.|.#.#
+#-#-#########-#
+#.#.#.|X#.|.#.#
+###-#-###-#-#-#
+#.|.#.#.|.#.|.#
+#-###-#####-###
+#.|.#.|.|.#.#.#
+#-#-#####-#-#-#
+#.#.|.|.|.#.|.#
+###############");
     }
 
     #[test]
     fn test_part1() {
-        /*
         assert_eq!(part1("^WNE$"), 3);
         assert_eq!(part1("^ENWWW(NEEE|SSE(EE|N))$"), 10);
         assert_eq!(part1("^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$"), 18);
         assert_eq!(part1("^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$"), 23);
         assert_eq!(part1("^WSSEESWWWNW(S|NENNEEEENN(ESSSSW(NWSW|SSEN)|WSWWN(E|WWS(E|SS))))$"), 31);
-        */
     }
 
     #[test]
