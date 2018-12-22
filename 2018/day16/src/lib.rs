@@ -8,7 +8,7 @@ pub enum Op {
     Gtir, Gtri, Gtrr, // if (r/v)A > (r/v)B { rC = 1 } else { rC = 0 }
     Eqir, Eqri, Eqrr, // if (r/v)A == (r/v)B { rC = 1 } else { rC = 0 }
     // Bonus instructions needed to optimize
-    Divr // rC = rA / rB
+    Divr, Divi  // rC = rA / rB
 }
 
 pub fn execute_op(registers: &mut [usize], op: Op, a: usize, b: usize, c: usize) {
@@ -29,6 +29,7 @@ pub fn execute_op(registers: &mut [usize], op: Op, a: usize, b: usize, c: usize)
         Op::Eqir => registers[c] = if a == registers[b] { 1 } else { 0 },
         Op::Eqri => registers[c] = if registers[a] == b { 1 } else { 0 },
         Op::Eqrr => registers[c] = if registers[a] == registers[b] { 1 } else { 0 },
-        Op::Divr => registers[c] = registers[a] / registers[b]
+        Op::Divr => registers[c] = registers[a] / registers[b],
+        Op::Divi => registers[c] = registers[a] / b
     }
 }

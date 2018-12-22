@@ -1,0 +1,9 @@
+The input contains a loop adding 1 to r1 until (r1+1)*256 > r2, like:
+
+for r1 in 0.. {
+    if (r1 + 1)*256 > r2 { break }
+}
+
+By adding a divi instruction, it can simply be:
+
+let r1 = r2 / 256;
