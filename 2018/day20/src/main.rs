@@ -1,6 +1,8 @@
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::io::{self, Read};
 use std::iter::Peekable;
+
 
 #[derive(Copy, Clone, Debug)]
 enum Dir {
@@ -93,7 +95,7 @@ impl Regex {
     }
 
     fn parse(input: &str) -> Regex {
-        Regex::parse_seq(&mut input.chars().peekable())
+        Regex::parse_seq(&mut input.trim_end().chars().peekable())
     }
 }
 
@@ -115,10 +117,10 @@ impl Map {
     }
 
     fn fill(&mut self, pos: &mut (usize, usize), regex: &Regex) {
-        if let Regex::Seq(seq) = regex {
-            self.fill_seq(pos, seq);
-        } else {
-            unreachable!()
+        match regex {
+            Regex::Dir(dir) => self.fill_dir(pos, *dir),
+            Regex::Seq(seq) => self.fill_seq(pos, seq),
+            Regex::Branch(branch) => self.fill_branch(pos, branch)
         }
     }
 
@@ -148,27 +150,19 @@ impl Map {
     }
 
     fn fill_seq(&mut self, pos: &mut (usize, usize), seq: &Vec<Box<Regex>>) {
-        let mut seq_iter = seq.iter();
-        while let Some(regex) = seq_iter.next() {
-            match &**regex {
-                Regex::Dir(dir) => self.fill_dir(pos, *dir),
-                Regex::Branch(branches) => {
-                    self.fill_branch(*pos, branches, &seq_iter.cloned().collect());
-                    break;
-                },
-                _ => unreachable!()
-            }
+        for regex in seq.iter() {
+            self.fill(pos, regex);
         }
     }
 
-    fn fill_branch(&mut self, init_pos: (usize, usize), branches: &Vec<Box<Regex>>, remaining_seq: &Vec<Box<Regex>>) {
+    fn fill_branch(&mut self, pos: &mut (usize, usize), branch: &Vec<Box<Regex>>) {
         let init_offset = self.offset;
-        for branch in branches.iter() {
-            let mut pos = init_pos;
+        let init_pos = *pos;
+        for detour in branch.iter() {
+            *pos = init_pos;
             pos.0 += self.offset.0 - init_offset.0;
             pos.1 += self.offset.1 - init_offset.1;
-            self.fill(&mut pos, &**branch);
-            self.fill_seq(&mut pos, remaining_seq);
+            self.fill(pos, &**detour);
         }
     }
 
@@ -268,15 +262,31 @@ impl fmt::Display for Map {
     }
 }
 
+fn calc_room_distances(map: &Map) -> BTreeMap<(usize, usize), usize> {
+    let mut seen_dists = BTreeMap::new();
+    let mut queue = VecDeque::new();
+    queue.push_back((map.offset, 0));
+    while let Some(((x, y), dist)) = queue.pop_front() {
+        if seen_dists.contains_key(&(x, y)) { continue }
+        seen_dists.insert((x, y), dist);
+        if x > 1                    && map.map[y][x-1] == '|' { queue.push_back(((x-2, y), dist+1)); }
+        if x < map.map[0].len() - 2 && map.map[y][x+1] == '|' { queue.push_back(((x+2, y), dist+1)); }
+        if y > 1                    && map.map[y-1][x] == '-' { queue.push_back(((x, y-2), dist+1)); }
+        if y < map.map.len() - 2    && map.map[y+1][x] == '-' { queue.push_back(((x, y+2), dist+1)); }
+    }
+    seen_dists
+}
 
 fn part1(input: &str) -> usize {
     let map = Map::generate(&Regex::parse(input));
-
-    0 
+    let room_dists = calc_room_distances(&map);
+    *room_dists.values().max().unwrap()
 }
 
 fn part2(input: &str) -> usize {
-    0 // FIXME
+    let map = Map::generate(&Regex::parse(input));
+    let room_dists = calc_room_distances(&map);
+    room_dists.iter().filter(|(_,dist)| **dist >= 1000).count()
 }
 
 fn main() {
@@ -360,10 +370,7 @@ mod tests {
         assert_eq!(part1("^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$"), 18);
         assert_eq!(part1("^ESSWWN(E|NNENN(EESS(WNSE|)SSS|WWWSSSSE(SW|NNNE)))$"), 23);
         assert_eq!(part1("^WSSEESWWWNW(S|NENNEEEENN(ESSSSW(NWSW|SSEN)|WSWWN(E|WWS(E|SS))))$"), 31);
-    }
 
-    #[test]
-    fn test_part2() {
-        // FIXME
+        assert_eq!(part1("^EEE(S|N)EEEEEEEEEEESSWWWWWWWWWWWN$"), 16);
     }
 }
