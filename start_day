@@ -2,25 +2,48 @@
 
 set -euo pipefail
 
-YEAR=$1
-DAY=$2
+function cd_to_root() {
+    YEAR=
+    while [[ ! -d .git && $PWD != "/" ]]; do
+        YEAR=$(basename $PWD)
+        cd ..
+    done
+    if [[ $PWD == "/" ]]; then
+        echo "error: Not inside the advent_of_code git repository" 1>&2
+        exit 1
+    fi
+    echo $YEAR
+}
+
+function usage() {
+    echo "usage: start_day <year> <day>" 1>&2
+    exit 1
+}
+
+if [[ $# == 2 ]]; then
+    YEAR=$1
+    DAY=$2
+elif [[ $# == 1 ]]; then
+    DAY=$1
+    YEAR=$(cd_to_root)
+    if [[ $YEAR == "" ]]; then
+        echo "error: when year is not specified, must be in a child directory of the ear" 1>&2
+        exit 1
+    fi
+else
+    usage
+fi
 
 if ! [[ $YEAR =~ 20[0-9]{2} ]]; then
-    echo "usage: start_day <year> <day>" 1>&2
-    exit 1
+    echo "error: invalid year: $YEAR" 1>&2
+    usage
 fi
 if ! [[ $DAY =~ [1-9]|1[0-9]|2[0-5] ]]; then
-    echo "usage: start_day <year> <day>" 1>&2
-    exit 1
+    echo "error: invalid day: $DAY" 1>&2
+    usage
 fi
 
-while [[ ! -d .git && $PWD != "/" ]]; do
-    cd ..
-done
-if [[ $PWD == "/" ]]; then
-    echo "error: Not inside the advent_of_code git repository" 1>&2
-    exit 1
-fi
+cd_to_root &> /dev/null
 
 mkdir -p $YEAR/day$DAY/
 cd $YEAR/day$DAY/
