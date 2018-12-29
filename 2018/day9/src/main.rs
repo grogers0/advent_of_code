@@ -1,76 +1,8 @@
 use std::io::{self, Read};
 
 use lazy_static::lazy_static;
+use linked_list::{LinkedList, Cursor};
 use regex::Regex;
-
-enum TreeVec<T> {
-    Leaf(Vec<T>),
-    Internal(usize, Vec<Box<TreeVec<T>>>)
-}
-
-impl <T> TreeVec<T> {
-    fn new() -> TreeVec<T> {
-        TreeVec::Leaf(Vec::new())
-    }
-
-    fn len(&self) -> usize {
-        match self {
-            TreeVec::Leaf(elems) => elems.len(),
-            TreeVec::Internal(len, _) => *len
-        }
-    }
-
-    fn remove(&mut self, idx: usize) -> T {
-        match self {
-            TreeVec::Leaf(elems) => elems.remove(idx),
-            TreeVec::Internal(ref mut len, children) => {
-                let mut cnt = 0;
-                assert!(idx < *len);
-                for i in 0..children.len() {
-                    if cnt + children[i].len() > idx {
-                        *len -= 1;
-                        return children[i].remove(idx - cnt);
-                    } else {
-                        cnt += children[i].len();
-                    }
-                }
-                unreachable!();
-            }
-        }
-    }
-
-    // OK  this is totally messed up but because of the way things are inserted randomly it's good
-    // enough for the 100x challenge
-    fn insert(&mut self, idx: usize, elem: T) {
-        const MAX: usize = 100;
-        match self {
-            TreeVec::Leaf(elems) => {
-                elems.insert(idx, elem);
-                if elems.len() == MAX {
-                    let elems2 = elems.split_off(MAX/2);
-                    let elems1 = elems.split_off(0);
-                    *self = TreeVec::Internal(MAX, vec![
-                        Box::new(TreeVec::Leaf(elems1)),
-                        Box::new(TreeVec::Leaf(elems2))]);
-                }
-            },
-            TreeVec::Internal(ref mut len, children) => {
-                let mut cnt = 0;
-                assert!(idx < *len);
-                for i in 0..children.len() {
-                    if cnt + children[i].len() > idx {
-                        *len += 1;
-                        children[i].insert(idx - cnt, elem);
-                        return;
-                    } else {
-                        cnt += children[i].len();
-                    }
-                }
-                unreachable!();
-            }
-        }
-    }
-}
 
 // (players, last marble)
 fn parse(input: &str) -> (usize, usize) {
@@ -81,22 +13,46 @@ fn parse(input: &str) -> (usize, usize) {
     (cap[1].parse().unwrap(), cap[2].parse().unwrap())
 }
 
+fn next_circular(cursor: &mut Cursor<usize>) -> usize {
+    if let Some(elem) = cursor.next() {
+        *elem
+    } else {
+        *cursor.next().unwrap()
+    }
+}
+
+fn prev_circular(cursor: &mut Cursor<usize>) -> usize {
+    if let Some(elem) = cursor.prev() {
+        *elem
+    } else {
+        *cursor.prev().unwrap()
+    }
+}
+
+fn remove_circular(cursor: &mut Cursor<usize>) -> usize {
+    if let Some(elem) = cursor.remove() {
+        elem
+    } else {
+        cursor.next();
+        cursor.remove().unwrap()
+    }
+}
+
 fn calc(num_players: usize, last_marble: usize) -> usize {
     let mut scores = vec![0; num_players];
     let mut player = num_players - 1;
-    //let mut circle = Vec::new();
-    let mut circle = TreeVec::new();
-    circle.insert(0, 0);
-    let mut curr_index = 0;
+    let mut circle = LinkedList::new();
+    circle.push_back(0);
+    let mut cur = circle.cursor();
     for marble in 1..=last_marble {
         player = (player + 1) % num_players;
 
         if marble % 23 == 0 {
-            curr_index = (curr_index + circle.len() - 7) % circle.len();
-            scores[player] += marble + circle.remove(curr_index);
+            for _ in 0..7 { prev_circular(&mut cur); }
+            scores[player] += marble + remove_circular(&mut cur);
         } else {
-            curr_index = (curr_index + 2) % circle.len();
-            circle.insert(curr_index, marble);
+            for _ in 0..2 { next_circular(&mut cur); }
+            cur.insert(marble);
         }
     }
     *scores.iter().max().unwrap()
