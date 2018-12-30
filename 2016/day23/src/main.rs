@@ -6,8 +6,8 @@ fn part1(input: &str) -> i64 {
     execute_with_initial_state(input, |registers| { registers.insert("a".to_string(), 7); })
 }
 
-// This only took a few minutes to run so I didn't bother actually hand optimizing the assembly
-// code as in other similar challenges
+// TODO - This only took a few minutes to run so I didn't bother actually hand optimizing the
+// assembly code as in other similar challenges.
 fn part2(input: &str) -> i64 {
     execute_with_initial_state(input, |registers| { registers.insert("a".to_string(), 12); })
 }
