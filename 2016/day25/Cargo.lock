@@ -1,0 +1,11 @@
+[[package]]
+name = "day12-2016"
+version = "0.1.0"
+
+[[package]]
+name = "day25-2016"
+version = "0.1.0"
+dependencies = [
+ "day12-2016 0.1.0",
+]
+
