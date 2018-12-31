@@ -3,16 +3,16 @@
 set -euo pipefail
 
 function cd_to_root() {
-    YEAR=
+    year=
     while [[ ! -d .git && $PWD != "/" ]]; do
-        YEAR=$(basename $PWD)
+        year=$(basename $PWD)
         cd ..
     done
     if [[ $PWD == "/" ]]; then
         echo "error: Not inside the advent_of_code git repository" 1>&2
         exit 1
     fi
-    echo $YEAR
+    echo $year
 }
 
 function usage() {
