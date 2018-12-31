@@ -49,7 +49,8 @@ fn check_toggling_clock(mut program: Vec<Op>, mut registers: BTreeMap<String, i6
     false
 }
 
-
+// TODO - this takes about a minute to run, probably there is a way to rewrite the input assembly
+// to be more efficient.
 fn part1(input: &str) -> i64 {
     let program = parse_ops(input);
     for i in 0.. {
