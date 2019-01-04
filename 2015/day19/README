@@ -1,0 +1,37 @@
+In the input, there are some elements that are present in the output but not the input:
+
+Ar, Rn, Y
+
+the outputs contain some structure around those, there are a couple possibilities:
+
+_ => _ _
+_ => _ Rn _ Ar
+_ => _ Rn _ Y _ Ar
+_ => _ Rn _ Y _ Y _ Ar
+
+so based on the number of Rn, Ar, and Y in the output we should be able to count how many steps to
+generate the output
+
+My puzzle has 7 Y's, 34 Rn/Ar pairs and 220 other molecules
+
+After 3 * (_ Rn _ Y _ Y _ Ar) replacements, we have:
+    1 + 3*3 = 10 _'s + 3 Rn/Ar's + 6 Y's
+
+After 1 * (_ Rn _ Y _ Ar) replacement, we have:
+    10 + 2*1 = 12 _'s + 4 Rn/Ar's + 7 Y's
+
+After 30 * (_ Rn _ Ar) replacements, we have:
+    12 + 30 = 42 _'s + 34 Rn/Ar's + 7 Y's
+
+After 178 * (_ _) replacements we have:
+    42 + 178 = 220 _'s + 34 Rn/Ar's + 7 Y's
+
+So the number of replacements done is 3 + 1 + 30 + 178 = 212
+
+NOTE - the type of Y replacements we do doesn't matter, i.e.
+
+    3 * (_ Rn _ Y _ Y _ Ar)     + 1 * (_ Rn _ Y _ Ar)   + 30 * (_ Rn _ Ar)
+    7 * (_ Rn _ Y _ Ar)                                 + 27 * (_ Rn _ Ar)
+
+both give the same total results. This is necessary for thie calculation method to work since we
+aren't actually checking whether any particular replacements can create the resulting molecule.

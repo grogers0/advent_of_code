@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet};
 use std::io::{self, Read};
 
 use regex::Regex;
@@ -33,29 +33,13 @@ fn possible_replacements(replacements: &BTreeMap<String, Vec<String>>, molecule:
     ret
 }
 
-// FIXME - takes too long, maybe A* or look at the input for some structure?
-fn steps_to_create_molecule(replacements: &BTreeMap<String, Vec<String>>, molecule: &str) -> usize {
-    let mut queue = VecDeque::new();
-    let mut seen = BTreeSet::new();
-    queue.push_back(("e".to_string(), 0));
-    while let Some((start, steps)) = queue.pop_front() {
-        if !seen.insert(start.clone()) { continue }
-        if start == molecule { return steps }
-        for end in possible_replacements(replacements, &start).into_iter() {
-            queue.push_back((end, steps + 1));
-        }
-    }
-    unreachable!()
-}
-
 fn part1(input: &str) -> usize {
     let (replacements, molecule) = parse(input);
     possible_replacements(&replacements, &molecule).len()
 }
 
-fn part2(input: &str) -> usize {
-    let (replacements, molecule) = parse(input);
-    steps_to_create_molecule(&replacements, &molecule)
+fn part2(_input: &str) -> &'static str {
+    "See README" // I didn't bother automating this
 }
 
 fn main() {
@@ -78,17 +62,5 @@ H => OH
 O => HH");
         assert_eq!(possible_replacements(&replacements, "HOH").len(), 4);
         assert_eq!(possible_replacements(&replacements, "HOHOHO").len(), 7);
-    }
-
-    #[test]
-    fn test_part2() {
-        let (replacements, _) = parse("\
-e => H
-e => O
-H => HO
-H => OH
-O => HH");
-        assert_eq!(steps_to_create_molecule(&replacements, "HOH"), 3);
-        assert_eq!(steps_to_create_molecule(&replacements, "HOHOHO"), 6);
     }
 }
