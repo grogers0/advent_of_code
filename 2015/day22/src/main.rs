@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn test_part1() {
         let player = Player { hp: 10, armor: 0, mana: 250 };
-        //assert_eq!(least_mana_spent_outcome(player.clone(), Boss { hp: 13, damage: 8 }, false), 226);
+        assert_eq!(least_mana_spent_outcome(player.clone(), Boss { hp: 13, damage: 8 }, false), 226);
         assert_eq!(least_mana_spent_outcome(player.clone(), Boss { hp: 14, damage: 8 }, false), 641);
     }
 }
