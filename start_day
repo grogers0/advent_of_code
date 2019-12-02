@@ -93,4 +93,4 @@ mod tests {
     }
 }
 EOF
-aoc fetch --day $DAY > input
+wget --no-verbose --load-cookies ../../cookies.txt  https://adventofcode.com/$YEAR/day/$DAY/input -O input
