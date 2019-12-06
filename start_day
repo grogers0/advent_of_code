@@ -15,6 +15,16 @@ function cd_to_root() {
     echo $year
 }
 
+function get_next_day() {
+    cd_to_root &>/dev/null
+    max_day=0
+    for day in $(ls "$1" | grep '^day[0-9]\+$' | sed 's/day//')
+    do
+        max_day=$(( $day > $max_day ? $day : $max_day ))
+    done
+    expr $max_day + 1
+}
+
 function usage() {
     echo "usage: start_day <year> <day>" 1>&2
     exit 1
@@ -24,12 +34,11 @@ if [[ $# == 2 ]]; then
     YEAR=$1
     DAY=$2
 elif [[ $# == 1 ]]; then
-    DAY=$1
     YEAR=$(cd_to_root)
-    if [[ $YEAR == "" ]]; then
-        echo "error: when year is not specified, must be in a child directory of the ear" 1>&2
-        exit 1
-    fi
+    DAY=$1
+elif [[ $# == 0 ]]; then
+    YEAR=$(cd_to_root)
+    DAY=$(get_next_day $YEAR)
 else
     usage
 fi
@@ -42,13 +51,15 @@ if ! [[ $DAY =~ [1-9]|1[0-9]|2[0-5] ]]; then
     echo "error: invalid day: $DAY" 1>&2
     usage
 fi
+echo "Day $DAY $YEAR"
 
 cd_to_root &> /dev/null
 
 mkdir -p $YEAR/day$DAY/
 cd $YEAR/day$DAY/
 mkdir -p src/
-cat > Cargo.toml <<EOF
+if [ ! -f Cargo.toml ]; then
+    cat > Cargo.toml <<EOF
 [package]
 name = "day$DAY-$YEAR"
 version = "0.1.0"
@@ -57,9 +68,12 @@ edition = "2018"
 
 [dependencies]
 EOF
+fi
+
 # Share target dirs to avoid recompiling common dependencies like regex
 ln -sf ../../target/ target
-cat > src/main.rs <<EOF
+if [ ! -f src/main.rs ]; then
+    cat > src/main.rs <<EOF
 use std::io::{self, Read};
 
 fn part1(input: &str) -> usize {
@@ -93,4 +107,5 @@ mod tests {
     }
 }
 EOF
+fi
 wget --no-verbose --load-cookies ../../cookies.txt  https://adventofcode.com/$YEAR/day/$DAY/input -O input
