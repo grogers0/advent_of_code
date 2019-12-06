@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::io::{self, Read};
 use std::ops::RangeInclusive;
 
@@ -54,14 +55,14 @@ fn monotonically_increasing(digits: &[u8]) -> bool {
     true
 }
 
-fn part1(input: &str) -> usize {
+fn part1(input: &str) -> impl Display {
     parse(input).into_iter().filter(|num| {
         let digits = digits(*num);
         has_adjacent_matching(&digits) && monotonically_increasing(&digits)
     }).count()
 }
 
-fn part2(input: &str) -> usize {
+fn part2(input: &str) -> impl Display {
     parse(input).into_iter().filter(|num| {
         let digits = digits(*num);
         has_adjacent_matching_strictly(&digits) && monotonically_increasing(&digits)

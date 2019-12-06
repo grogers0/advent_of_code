@@ -74,14 +74,15 @@ fi
 ln -sf ../../target/ target
 if [ ! -f src/main.rs ]; then
     cat > src/main.rs <<EOF
+use std::fmt::Display;
 use std::io::{self, Read};
 
-fn part1(input: &str) -> usize {
-    0 // FIXME
+fn part1(input: &str) -> impl Display {
+    "FIXME"
 }
 
-fn part2(input: &str) -> usize {
-    0 // FIXME
+fn part2(input: &str) -> impl Display {
+    "FIXME"
 }
 
 fn main() {

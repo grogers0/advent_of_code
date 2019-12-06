@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+for dir in $(find ../day* -name "Cargo.toml" |
+    xargs grep --files-with-matches intcode |
+    xargs dirname)
+do
+    pushd $dir >/dev/null
+    cargo run --release < input
+    popd >/dev/null
+done

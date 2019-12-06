@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::io::{self, Read};
 
 fn parse_input(input: &str) -> Vec<i32> {
@@ -21,12 +22,12 @@ fn fuel_needed_including_fuel(module_mass: i32) -> i32 {
     tot_fuel
 }
 
-fn part1(input: &str) -> i32 {
-    parse_input(input).into_iter().map(|mass| fuel_needed(mass)).sum()
+fn part1(input: &str) -> impl Display {
+    parse_input(input).into_iter().map(|mass| fuel_needed(mass)).sum::<i32>()
 }
 
-fn part2(input: &str) -> i32 {
-    parse_input(input).into_iter().map(|mass| fuel_needed_including_fuel(mass)).sum()
+fn part2(input: &str) -> impl Display {
+    parse_input(input).into_iter().map(|mass| fuel_needed_including_fuel(mass)).sum::<i32>()
 }
 
 fn main() {
