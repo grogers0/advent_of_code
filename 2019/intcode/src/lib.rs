@@ -1,5 +1,6 @@
-type Int = i32;
-type Mem = Vec<Int>;
+use std::sync::mpsc::{Receiver, Sender};
+
+type Mem = Vec<i32>;
 
 pub fn parse(mem_str: &str) -> Mem {
     mem_str.trim().split(",")
@@ -13,21 +14,21 @@ enum ParamMode {
 }
 
 fn param_mode(mem: &Mem, pc: usize, param_num: usize) -> ParamMode {
-    match mem[pc] / Int::pow(10, param_num as u32 + 1) % 10 {
+    match mem[pc] / i32::pow(10, param_num as u32 + 1) % 10 {
         0 => ParamMode::Position,
         1 => ParamMode::Immediate,
         mode => unimplemented!("unknown parameter mode {}", mode)
     }
 }
 
-fn param(mem: &Mem, pc: usize, param_num: usize) -> Int {
+fn param(mem: &Mem, pc: usize, param_num: usize) -> i32 {
     match param_mode(mem, pc, param_num) {
         ParamMode::Position => mem[mem[pc + param_num] as usize],
         ParamMode::Immediate => mem[pc + param_num]
     }
 }
 
-fn param_mut(mem: &mut Mem, pc: usize, param_num: usize) -> &mut Int {
+fn param_mut(mem: &mut Mem, pc: usize, param_num: usize) -> &mut i32 {
     match param_mode(mem, pc, param_num) {
         ParamMode::Position => {
             let offset = mem[pc + param_num] as usize;
@@ -38,13 +39,12 @@ fn param_mut(mem: &mut Mem, pc: usize, param_num: usize) -> &mut Int {
     }
 }
 
-fn inst(mem: &Mem, pc: usize) -> Int {
+fn inst(mem: &Mem, pc: usize) -> i32 {
     mem[pc] % 100
 }
 
-pub fn run(mem: &mut Mem, input: Option<Int>) -> Vec<Int> {
+pub fn run(mem: &mut Mem, input: Receiver<i32>, output: Sender<i32>) {
     let mut pc = 0;
-    let mut output = Vec::new();
     loop {
         match inst(mem, pc) {
             1 => { // add
@@ -56,11 +56,11 @@ pub fn run(mem: &mut Mem, input: Option<Int>) -> Vec<Int> {
                 pc += 4;
             },
             3 => { // read input
-                *param_mut(mem, pc, 1) = input.expect("no input given");
+                *param_mut(mem, pc, 1) = input.recv().unwrap();
                 pc += 2;
             },
             4 => { // write output
-                output.push(param(mem, pc, 1));
+                output.send(param(mem, pc, 1)).unwrap();
                 pc += 2;
             },
             5 => { // jump if nonzero
@@ -89,26 +89,29 @@ pub fn run(mem: &mut Mem, input: Option<Int>) -> Vec<Int> {
             opcode => unimplemented!("unknown opcode {}", opcode)
         }
     }
-    output
 }
 
 
 #[cfg(test)]
 mod tests {
+    use std::sync::mpsc::channel;
+
     use super::*;
 
     fn run_no_io(mem_str: &str) -> Mem {
         let mut mem = parse(mem_str);
-        let output = run(&mut mem, None);
-        assert_eq!(Vec::<Int>::new(), output);
+        run(&mut mem, channel().1, channel().0);
         mem
     }
 
-    fn run_single_io(mem_str: &str, input: Int) -> Int {
-        let mut mem = parse(mem_str);
-        let output = run(&mut mem, Some(input));
-        assert_eq!(1, output.len());
-        output[0]
+    fn run_single_io(mem_str: &str, input: i32) -> i32 {
+        let (tx_in, rx_in) = channel();
+        let (tx_out, rx_out) = channel();
+        tx_in.send(input).unwrap();
+        run(&mut parse(mem_str), rx_in, tx_out);
+        let output = rx_out.recv().unwrap();
+        assert!(rx_out.recv().is_err());
+        output
     }
 
     #[test]

@@ -4,7 +4,7 @@ for dir in $(find $(dirname $0) -name Cargo.toml | xargs dirname | sort -n)
 do
     pushd $dir >/dev/null
     cargo test --release
-    if [[ $dir =~ /day[0-9]\+$ ]]; then
+    if [ -f input ]; then
         cargo run --release < input
     fi
     popd >/dev/null

@@ -1,23 +1,33 @@
 use std::fmt::Display;
 use std::io::{self, Read};
+use std::sync::mpsc::channel;
 
 use intcode::*;
 
-fn part1(input: &str) -> impl Display {
-    let mut mem = parse(input);
-    let output = run(&mut mem, Some(1));
-    assert!(output.len() > 1);
-    for outval in &output[0 .. (output.len() - 1)] {
-        assert_eq!(0, *outval);
+fn part1(mem_str: &str) -> impl Display {
+    let (tx_in, rx_in) = channel();
+    let (tx_out, rx_out) = channel();
+    tx_in.send(1).unwrap();
+    run(&mut parse(mem_str), rx_in, tx_out);
+    let mut outputs = Vec::new();
+    while let Ok(val) = rx_out.recv() {
+        outputs.push(val);
     }
-    output[output.len() - 1]
+    assert!(outputs.len() > 1);
+    for val in &outputs[0..outputs.len()-1] {
+        assert_eq!(0, *val);
+    }
+    outputs[outputs.len()-1]
 }
 
-fn part2(input: &str) -> impl Display {
-    let mut mem = parse(input);
-    let output = run(&mut mem, Some(5));
-    assert_eq!(1, output.len());
-    output[0]
+fn part2(mem_str: &str) -> impl Display {
+    let (tx_in, rx_in) = channel();
+    let (tx_out, rx_out) = channel();
+    tx_in.send(5).unwrap();
+    run(&mut parse(mem_str), rx_in, tx_out);
+    let output = rx_out.recv().unwrap();
+    assert!(rx_out.recv().is_err());
+    output
 }
 
 fn main() {
