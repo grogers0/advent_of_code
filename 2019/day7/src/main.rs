@@ -5,7 +5,7 @@ use std::thread;
 use intcode::*;
 
 // TODO - this would be a good time to learn about async/await
-fn connect_chain(mem_str: &str, phases: Vec<i32>) -> (Sender<i32>, Receiver<i32>) {
+fn connect_chain(mem_str: &str, phases: Vec<i64>) -> (Sender<i64>, Receiver<i64>) {
     let (mut tx, mut rx) = channel();
     let tx_init = tx.clone();
 
@@ -29,13 +29,13 @@ fn connect_chain(mem_str: &str, phases: Vec<i32>) -> (Sender<i32>, Receiver<i32>
     (tx_init, rx)
 }
 
-fn part1(mem_str: &str) -> i32 {
+fn part1(mem_str: &str) -> i64 {
     permutohedron::Heap::new(&mut (0..5).collect::<Vec<_>>()).map(|phases| {
         connect_chain(mem_str, phases).1.recv().unwrap()
     }).max().unwrap()
 }
 
-fn part2(mem_str: &str) -> i32 {
+fn part2(mem_str: &str) -> i64 {
     permutohedron::Heap::new(&mut (5..10).collect::<Vec<_>>()).map(|phases| {
         let (tx_in, rx_out) = connect_chain(mem_str, phases);
         let mut output = None;

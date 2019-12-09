@@ -1,90 +1,127 @@
+use std::collections::HashMap;
+use std::ops::{Index, IndexMut};
 use std::sync::mpsc::{Receiver, Sender};
 
-type Mem = Vec<i32>;
+#[derive(PartialEq, Debug)]
+pub struct Mem(HashMap<usize, i64>);
+
+impl Index<usize> for Mem {
+    type Output = i64;
+    fn index(&self, idx: usize) -> &i64 {
+        self.0.get(&idx).or(Some(&0)).unwrap()
+    }
+}
+
+impl IndexMut<usize> for Mem {
+    fn index_mut(&mut self, idx: usize) -> &mut i64 {
+        self.0.entry(idx).or_insert(0)
+    }
+}
 
 pub fn parse(mem_str: &str) -> Mem {
-    mem_str.trim().split(",")
+    Mem(mem_str.trim().split(",")
         .map(|chunk| chunk.parse().unwrap())
-        .collect()
+        .enumerate()
+        .collect())
 }
 
 enum ParamMode {
     Position,
-    Immediate
+    Immediate,
+    Relative
 }
 
 fn param_mode(mem: &Mem, pc: usize, param_num: usize) -> ParamMode {
-    match mem[pc] / i32::pow(10, param_num as u32 + 1) % 10 {
+    match mem[pc] / i64::pow(10, param_num as u32 + 1) % 10 {
         0 => ParamMode::Position,
         1 => ParamMode::Immediate,
+        2 => ParamMode::Relative,
         mode => unimplemented!("unknown parameter mode {}", mode)
     }
 }
 
-fn param(mem: &Mem, pc: usize, param_num: usize) -> i32 {
+fn param(mem: &Mem, pc: usize, param_num: usize, relative_base: &i64) -> i64 {
     match param_mode(mem, pc, param_num) {
         ParamMode::Position => mem[mem[pc + param_num] as usize],
-        ParamMode::Immediate => mem[pc + param_num]
+        ParamMode::Immediate => mem[pc + param_num],
+        ParamMode::Relative => mem[(mem[pc + param_num] + *relative_base) as usize]
     }
 }
 
-fn param_mut(mem: &mut Mem, pc: usize, param_num: usize) -> &mut i32 {
+fn param_mut<'a>(mem: &'a mut Mem, pc: usize, param_num: usize, relative_base: &i64) -> &'a mut i64 {
     match param_mode(mem, pc, param_num) {
         ParamMode::Position => {
-            let offset = mem[pc + param_num] as usize;
-            &mut mem[offset]
+            let offset = mem[pc + param_num];
+            &mut mem[offset as usize]
         },
         ParamMode::Immediate => panic!("parameter {} of instruction {} at pc {} is a write in immediate mode",
-            param_num, inst(mem, pc), pc)
+            param_num, inst(mem, pc), pc),
+        ParamMode::Relative => {
+            let offset = mem[pc + param_num] + *relative_base;
+            &mut mem[offset as usize]
+        }
     }
 }
 
-fn inst(mem: &Mem, pc: usize) -> i32 {
+fn inst(mem: &Mem, pc: usize) -> i64 {
     mem[pc] % 100
 }
 
-pub fn run(mem: &mut Mem, input: Receiver<i32>, output: Sender<i32>) {
+pub fn run(mem: &mut Mem, input: Receiver<i64>, output: Sender<i64>) {
     let mut pc = 0;
+    let mut relative_base = 0;
     loop {
         match inst(mem, pc) {
             1 => { // add
-                *param_mut(mem, pc, 3) = param(mem, pc, 1) + param(mem, pc, 2);
+                let a = param(mem, pc, 1, &relative_base);
+                let b = param(mem, pc, 2, &relative_base);
+                *param_mut(mem, pc, 3, &relative_base) = a + b;
                 pc += 4;
             },
             2 => { // mul
-                *param_mut(mem, pc, 3) = param(mem, pc, 1) * param(mem, pc, 2);
+                let a = param(mem, pc, 1, &relative_base);
+                let b = param(mem, pc, 2, &relative_base);
+                *param_mut(mem, pc, 3, &relative_base) = a * b;
                 pc += 4;
             },
             3 => { // read input
-                *param_mut(mem, pc, 1) = input.recv().unwrap();
+                *param_mut(mem, pc, 1, &relative_base) = input.recv().unwrap();
                 pc += 2;
             },
             4 => { // write output
-                output.send(param(mem, pc, 1)).unwrap();
+                output.send(param(mem, pc, 1, &relative_base)).unwrap();
                 pc += 2;
             },
             5 => { // jump if nonzero
-                if param(mem, pc, 1) != 0 {
-                    pc = param(mem, pc, 2) as usize;
+                if param(mem, pc, 1, &relative_base) != 0 {
+                    pc = param(mem, pc, 2, &relative_base) as usize;
                 } else {
                     pc += 3;
                 }
             },
             6 => { // jump if zero
-                if param(mem, pc, 1) == 0 {
-                    pc = param(mem, pc, 2) as usize;
+                if param(mem, pc, 1, &relative_base) == 0 {
+                    pc = param(mem, pc, 2, &relative_base) as usize;
                 } else {
                     pc += 3;
                 }
             },
             7 => { // less than
-                *param_mut(mem, pc, 3) = if param(mem, pc, 1) < param(mem, pc, 2) { 1 } else { 0 };
+                let a = param(mem, pc, 1, &relative_base);
+                let b = param(mem, pc, 2, &relative_base);
+                *param_mut(mem, pc, 3, &relative_base) = if a < b { 1 } else { 0 };
                 pc += 4;
             },
             8 => { // equals
-                *param_mut(mem, pc, 3) = if param(mem, pc, 1) == param(mem, pc, 2) { 1 } else { 0 };
+                let a = param(mem, pc, 1, &relative_base);
+                let b = param(mem, pc, 2, &relative_base);
+                *param_mut(mem, pc, 3, &relative_base) = if a == b { 1 } else { 0 };
                 pc += 4;
             },
+            9 => { // Relative base offset
+                relative_base += param(mem, pc, 1, &relative_base);
+                pc += 2;
+            }
             99 => break, // halt
             opcode => unimplemented!("unknown opcode {}", opcode)
         }
@@ -94,6 +131,7 @@ pub fn run(mem: &mut Mem, input: Receiver<i32>, output: Sender<i32>) {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write;
     use std::sync::mpsc::channel;
 
     use super::*;
@@ -104,7 +142,7 @@ mod tests {
         mem
     }
 
-    fn run_single_io(mem_str: &str, input: i32) -> i32 {
+    fn run_single_io(mem_str: &str, input: i64) -> i64 {
         let (tx_in, rx_in) = channel();
         let (tx_out, rx_out) = channel();
         tx_in.send(input).unwrap();
@@ -168,5 +206,31 @@ mod tests {
         assert_eq!(999, run_single_io(ex, 7));
         assert_eq!(1000, run_single_io(ex, 8));
         assert_eq!(1001, run_single_io(ex, 9));
+    }
+
+    #[test]
+    fn test_day9_part1() {
+        let ex_quine = "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99";
+        let (tx_out, rx_out) = channel();
+        run(&mut parse(ex_quine), channel().1, tx_out);
+        let mut quine_out = String::new();
+        let mut first = true;
+        while let Ok(v) = rx_out.recv() {
+            if first { first = false; } else { quine_out.push(',') }
+            write!(quine_out, "{}", v).unwrap();
+        }
+        assert_eq!(quine_out, ex_quine);
+
+        let ex_16digit = "1102,34915192,34915192,7,4,7,99,0";
+        let (tx_out, rx_out) = channel();
+        run(&mut parse(ex_16digit), channel().1, tx_out);
+        assert_eq!(format!("{}", rx_out.recv().unwrap()).len(), 16);
+        assert!(rx_out.recv().is_err());
+
+        let ex_middle = "104,1125899906842624,99";
+        let (tx_out, rx_out) = channel();
+        run(&mut parse(ex_middle), channel().1, tx_out);
+        assert_eq!(1125899906842624, rx_out.recv().unwrap());
+        assert!(rx_out.recv().is_err());
     }
 }
