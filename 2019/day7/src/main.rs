@@ -9,10 +9,9 @@ fn connect_chain(mem_str: &str, phases: Vec<i32>) -> (Sender<i32>, Receiver<i32>
     let (mut tx, mut rx) = channel();
     let tx_init = tx.clone();
 
-    for (i, phase) in phases.into_iter().enumerate() {
+    for phase in phases {
         let rx_in = rx;
         tx.send(phase).unwrap();
-        if i == 0 { tx.send(0).unwrap(); } // Initial input to the chain
 
         let (tx_tmp, rx_tmp) = channel();
         tx = tx_tmp; rx = rx_tmp;
@@ -23,6 +22,10 @@ fn connect_chain(mem_str: &str, phases: Vec<i32>) -> (Sender<i32>, Receiver<i32>
             run(&mut mem, rx_in, tx_out);
         });
     }
+
+    // NOTE - when this happens inside the loop, occaisonally we get panics. I think because the
+    // sends get reordered incorrectly. Maybe a codegen bug?
+    tx_init.send(0).unwrap(); // Initial input to the chain
     (tx_init, rx)
 }
 
@@ -32,16 +35,12 @@ fn part1(mem_str: &str) -> i32 {
     }).max().unwrap()
 }
 
-// FIXME - this returns the wrong result and/or crashes sometimes. I think there's some race
-// condition still.
-// while (RUST_BACKTRACE=full cargo run --release < input); do true; done
 fn part2(mem_str: &str) -> i32 {
     permutohedron::Heap::new(&mut (5..10).collect::<Vec<_>>()).map(|phases| {
-        let (tx_init, rx) = connect_chain(mem_str, phases);
-
+        let (tx_in, rx_out) = connect_chain(mem_str, phases);
         let mut output = None;
-        while let Ok(val) = rx.recv() {
-            let _ = tx_init.send(val); // Ok if the first program has stopped
+        while let Ok(val) = rx_out.recv() {
+            let _ = tx_in.send(val); // Ok if the first program has stopped
             output = Some(val);
         }
         output.unwrap()
