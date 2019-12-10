@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-for dir in $(find $(dirname $0) -name Cargo.toml | xargs dirname | sort -n)
+for dir in $(find $(dirname $0) -name Cargo.toml | xargs dirname | sort -V)
 do
     pushd $dir >/dev/null
     cargo test --release
