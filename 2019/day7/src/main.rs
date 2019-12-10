@@ -23,9 +23,9 @@ fn connect_chain(mem_str: &str, phases: Vec<i64>) -> (Sender<i64>, Receiver<i64>
         });
     }
 
-    // NOTE - when this happens inside the loop, occaisonally we get panics. I think because the
-    // sends get reordered incorrectly. Maybe a codegen bug?
-    tx_init.send(0).unwrap(); // Initial input to the chain
+    // NOTE - The initial input must be sent after all phases have been sent, otherwise the output
+    // of one program might be sent before the phase for that program has been sent.
+    tx_init.send(0).unwrap();
     (tx_init, rx)
 }
 
