@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use std::io::{self, Read};
 
 use bit_vec::{BitVec, Iter as BitVecIter};
+use num_integer::gcd;
 
 struct Map {
     width: usize,
@@ -65,17 +66,6 @@ fn parse(input: &str) -> Map {
 struct RotDir { n: usize, d: usize, q: usize }
 
 impl RotDir {
-    fn gcd(mut a: usize, mut b: usize) -> usize {
-        while a != b {
-            if a > b {
-                a = a - b;
-            } else {
-                b = b - a;
-            }
-        }
-        a
-    }
-
     fn new(origin: (usize, usize), other: (usize, usize)) -> Self {
         let right_hemi = other.0 >= origin.0;
         let bottom_hemi = other.1 >= origin.1;
@@ -85,7 +75,7 @@ impl RotDir {
         let gcd = if dx == 0 && dy == 0 { unreachable!() }
         else if dx == 0 { dy }
         else if dy == 0 { dx }
-        else { Self::gcd(dx, dy) };
+        else { gcd(dx, dy) };
 
         let dx = dx / gcd;
         let dy = dy / gcd;
@@ -117,7 +107,7 @@ impl Ord for RotDir {
         } else if other.d == 0 {
             return Ordering::Greater;
         }
-        let gcd = Self::gcd(self.d, other.d);
+        let gcd = gcd(self.d, other.d);
         let a = self.n * other.d / gcd;
         let b = other.n * self.d / gcd;
         a.cmp(&b)
