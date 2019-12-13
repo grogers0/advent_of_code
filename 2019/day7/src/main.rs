@@ -18,9 +18,7 @@ fn connect_chain(mem_str: &str, phases: Vec<i64>) -> (Sender<i64>, Receiver<i64>
         let tx_out = tx.clone();
 
         let mut mem = parse(mem_str);
-        thread::spawn(move || {
-            run(&mut mem, rx_in, tx_out);
-        });
+        thread::spawn(move || run(&mut mem, rx_in, tx_out));
     }
 
     // NOTE - The initial input must be sent after all phases have been sent, otherwise the output

@@ -59,7 +59,7 @@ fn part2(input: &str) -> impl Display {
         for x in 0..img.width {
             let px = match img.pixel_value(x, y) {
                 0 => '.',
-                1 => '@',
+                1 => '#',
                 _ => panic!()
             };
             output.push(px);
