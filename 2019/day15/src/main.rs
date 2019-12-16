@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::fmt::{Display, Write};
+use std::fmt::Write;
 use std::io::{self, Read};
 use std::ops;
 use std::sync::mpsc::channel;
@@ -144,7 +144,7 @@ fn map_to_string(map: &HashMap<Pos, Square>) -> String {
     f
 }
 
-fn part1(mem_str: &str) -> impl Display {
+fn part1(mem_str: &str) -> usize {
     let map = build_map(mem_str);
 
     let mut queue = VecDeque::new();
