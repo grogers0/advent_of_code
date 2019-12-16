@@ -89,7 +89,9 @@ pub fn run(mem: &mut Mem, input: Receiver<i64>, output: Sender<i64>) {
                 pc += 2;
             },
             4 => { // write output
-                output.send(param(mem, pc, 1, &relative_base)).unwrap();
+                if output.send(param(mem, pc, 1, &relative_base)).is_err() {
+                    return // We've stopped reading outputs so stop the program
+                }
                 pc += 2;
             },
             5 => { // jump if nonzero
