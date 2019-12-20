@@ -116,9 +116,6 @@ fn build_map(mem_str: &str) -> HashMap<Pos, Square> {
             _ => panic!()
         }
     }
-    std::mem::drop(rx_out);
-    tx_in.send(Dir::North.to_command()).unwrap();
-
     map
 }
 

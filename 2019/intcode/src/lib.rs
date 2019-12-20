@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 use std::sync::mpsc::{Receiver, Sender};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Mem(HashMap<usize, i64>);
 
 impl Index<usize> for Mem {
@@ -85,7 +85,10 @@ pub fn run(mem: &mut Mem, input: Receiver<i64>, output: Sender<i64>) {
                 pc += 4;
             },
             3 => { // read input
-                *param_mut(mem, pc, 1, &relative_base) = input.recv().unwrap();
+                match input.recv() {
+                    Ok(val) => *param_mut(mem, pc, 1, &relative_base) = val,
+                    Err(_) => return // We've stopped writing inputs so stop the program
+                };
                 pc += 2;
             },
             4 => { // write output
