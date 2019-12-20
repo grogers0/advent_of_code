@@ -54,10 +54,10 @@ impl Square {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Turn { Left, Right }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Move {
     Turn(Turn),
     Step(usize),
@@ -122,7 +122,7 @@ fn take_snapshot(mem_str: &str) -> String {
     ret
 }
 
-fn serialize_moves(moves: &Vec<Move>) -> String {
+fn serialize_moves(moves: &[Move]) -> String {
     let mut ret = String::new();
     let mut first = true;
     for m in moves {
@@ -170,6 +170,56 @@ fn get_path(map: &Map) -> Vec<Move> {
     }
 }
 
+// NOTE - This is naive and takes a second. It's not obvious how you could make it faster though.
+fn get_move_commands(path: Vec<Move>) -> (String, String, String, String) {
+    fn make_path(a: &[Move], b: &[Move], c: &[Move], path: &[Move]) -> Option<String> {
+        if path.is_empty() {
+            return Some(String::new())
+        }
+        if path[0 .. a.len()] == *a {
+            if let Some(rest) = make_path(a, b, c, &path[a.len() .. ]) {
+                return Some(if rest.is_empty() { "A".into() } else { format!("A,{}", rest) })
+            }
+        }
+        if path[0 .. b.len()] == *b {
+            if let Some(rest) = make_path(a, b, c, &path[b.len() .. ]) {
+                return Some(if rest.is_empty() { "B".into() } else { format!("B,{}", rest) })
+            }
+        }
+        if path[0 .. c.len()] == *c {
+            if let Some(rest) = make_path(a, b, c, &path[c.len() .. ]) {
+                return Some(if rest.is_empty() { "C".into() } else { format!("C,{}", rest) })
+            }
+        }
+        None
+    }
+
+    let start_a = 0;
+    for end_a in start_a + 1 .. path.len() {
+        let a = &path[start_a .. end_a];
+        if serialize_moves(a).chars().count() > 20 { continue }
+
+        for start_b in end_a .. path.len() {
+            for end_b in start_b + 1 .. path.len() {
+                let b = &path[start_b .. end_b];
+                if serialize_moves(b).chars().count() > 20 { continue }
+
+                for start_c in end_b .. path.len() {
+                    for end_c in start_c + 1 .. path.len() {
+                        let c = &path[start_c .. end_c];
+                        if serialize_moves(c).chars().count() > 20 { continue }
+
+                        if let Some(main) = make_path(a, b, c, &path) {
+                            return (serialize_moves(a), serialize_moves(b), serialize_moves(c), main)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    panic!()
+}
+
 fn part1(mem_str: &str) -> isize {
     let map = snapshot_to_map(&take_snapshot(mem_str));
     let mut sum = 0;
@@ -191,14 +241,8 @@ fn part2(mem_str: &str) -> i64 {
     let snapshot = take_snapshot(mem_str);
     let map = snapshot_to_map(&snapshot);
     let path = get_path(&map);
-    let _ = serialize_moves(&path);
-    // FIXME - I manually simulated this in a text editor to find the correct path, this will only
-    // work for my particular input
-    let a = "L,4,L,6,L,8,L,12";
-    let b = "L,8,R,12,L,12";
-    let c = "R,12,L,6,L,6,L,8";
-    let main = "A,B,B,A,B,C,A,C,B,C";
-    let video = "n";
+    let (a, b, c, main) = get_move_commands(path);
+    let video = "n".into();
 
     let (tx_in, rx_in) = channel();
     let (tx_out, rx_out) = channel();
