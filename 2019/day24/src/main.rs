@@ -5,8 +5,7 @@ use std::ops::Range;
 
 use bit_vec::BitVec;
 
-const WIDTH: usize = 5;
-const HEIGHT: usize = 5;
+const LEN: usize = 5;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct Map(BitVec);
@@ -14,7 +13,7 @@ struct Map(BitVec);
 impl Map {
     fn parse(puzzle_input: &str) -> Self {
         let map = puzzle_input.trim().lines().flat_map(|line| {
-            assert_eq!(WIDTH, line.chars().count());
+            assert_eq!(LEN, line.chars().count());
             line.chars().map(|ch| {
                 match ch {
                     '#' => true,
@@ -23,35 +22,35 @@ impl Map {
                 }
             })
         }).collect::<BitVec>();
-        assert_eq!(WIDTH * HEIGHT, map.len());
+        assert_eq!(LEN * LEN, map.len());
         Self(map)
     }
 
     fn empty() -> Self {
         let mut map = BitVec::new();
-        for _ in 0..HEIGHT*WIDTH {
+        for _ in 0..LEN*LEN {
             map.push(false)
         }
         Map(map)
     }
 
     fn bug_at(&self, x: usize, y: usize) -> bool {
-        self.0[WIDTH * y + x]
+        self.0[LEN * y + x]
     }
 
     fn adjacent_bugs(&self, x: usize, y: usize) -> usize {
         let mut ret = 0;
-        if x > 0          && self.bug_at(x - 1, y) { ret += 1 }
-        if x < WIDTH - 1  && self.bug_at(x + 1, y) { ret += 1 }
-        if y > 0          && self.bug_at(x, y - 1) { ret += 1 }
-        if y < HEIGHT - 1 && self.bug_at(x, y + 1) { ret += 1 }
+        if x > 0       && self.bug_at(x - 1, y) { ret += 1 }
+        if x < LEN - 1 && self.bug_at(x + 1, y) { ret += 1 }
+        if y > 0       && self.bug_at(x, y - 1) { ret += 1 }
+        if y < LEN - 1 && self.bug_at(x, y + 1) { ret += 1 }
         ret
     }
 
     fn step(&self) -> Self {
         let mut map = BitVec::new();
-        for y in 0..HEIGHT {
-            for x in 0..WIDTH {
+        for y in 0..LEN {
+            for x in 0..LEN {
                 let num_adjacent = self.adjacent_bugs(x, y);
                 map.push(if self.bug_at(x, y) {
                     num_adjacent == 1
@@ -85,8 +84,8 @@ impl Map {
 #[allow(dead_code)]
 impl fmt::Display for Map {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for y in 0..HEIGHT {
-            for x in 0..WIDTH {
+        for y in 0..LEN {
+            for x in 0..LEN {
                 write!(f, "{}", if self.bug_at(x, y) { '#' } else { '.' })?
             }
             write!(f, "\n")?;
@@ -116,7 +115,7 @@ impl RecursiveMap {
     }
 
     fn bug_at(&self, x: usize, y: usize, depth: isize) -> bool {
-        assert!(x != WIDTH/2 || y != HEIGHT/2);
+        assert!(x != LEN/2 || y != LEN/2);
         if !self.depths().contains(&depth) { return false }
         self.data[(depth + self.offset as isize) as usize].bug_at(x, y)
     }
@@ -132,7 +131,7 @@ impl RecursiveMap {
         } else if y != 2 || x == 1 || x == 4 {
             if self.bug_at(x - 1, y, depth) { ret += 1 }
         } else if x == 3 {
-            for i in 0..WIDTH {
+            for i in 0..LEN {
                 if self.bug_at(4, i, depth + 1) { ret += 1 }
             }
         }
@@ -142,7 +141,7 @@ impl RecursiveMap {
         } else if y != 2 || x == 3 || x == 0 {
             if self.bug_at(x + 1, y, depth) { ret += 1 }
         } else if x == 1 {
-            for i in 0..WIDTH {
+            for i in 0..LEN {
                 if self.bug_at(0, i, depth + 1) { ret += 1 }
             }
         }
@@ -152,7 +151,7 @@ impl RecursiveMap {
         } else if x != 2 || y == 1 || y == 4 {
             if self.bug_at(x, y - 1, depth) { ret += 1 }
         } else if y == 3 {
-            for i in 0..WIDTH {
+            for i in 0..LEN {
                 if self.bug_at(i, 4, depth + 1) { ret += 1 }
             }
         }
@@ -162,7 +161,7 @@ impl RecursiveMap {
         } else if x != 2 || y == 3 || y == 0 {
             if self.bug_at(x, y + 1, depth) { ret += 1 }
         } else if y == 1 {
-            for i in 0..WIDTH {
+            for i in 0..LEN {
                 if self.bug_at(i, 0, depth + 1) { ret += 1 }
             }
         }
@@ -177,16 +176,16 @@ impl RecursiveMap {
         map.data.push_back(Map::empty());
 
         for depth in map.depths() {
-            for y in 0..HEIGHT {
-                for x in 0..WIDTH {
-                    if x == WIDTH/2 && y == HEIGHT/2 { continue }
+            for y in 0..LEN {
+                for x in 0..LEN {
+                    if x == LEN/2 && y == LEN/2 { continue }
                     let num_adjacent = self.adjacent_bugs(x, y, depth);
                     let val = if self.bug_at(x, y, depth) {
                         num_adjacent == 1
                     } else {
                         num_adjacent == 1 || num_adjacent == 2
                     };
-                    map.data[(depth + map.offset as isize) as usize].0.set(WIDTH * y + x, val);
+                    map.data[(depth + map.offset as isize) as usize].0.set(LEN * y + x, val);
                 }
             }
         }
@@ -216,9 +215,9 @@ impl fmt::Debug for RecursiveMap {
             if depth != -(self.offset as isize) { writeln!(f, "")? }
             writeln!(f, "Depth {}:", depth)?;
 
-            for y in 0..HEIGHT {
-                for x in 0..WIDTH {
-                    if x == WIDTH/2 && y == HEIGHT/2 {
+            for y in 0..LEN {
+                for x in 0..LEN {
+                    if x == LEN/2 && y == LEN/2 {
                         write!(f, "?")?
                     } else {
                         write!(f, "{}", if self.bug_at(x, y, depth) { '#' } else { '.' })?
