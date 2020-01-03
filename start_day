@@ -74,23 +74,22 @@ fi
 ln -sf ../../target/ target
 if [ ! -f src/main.rs ]; then
     cat > src/main.rs <<EOF
-use std::fmt::Display;
 use std::io::{self, Read};
 
-fn part1(input: &str) -> impl Display {
+fn part1(puzzle_input: &str) -> &str {
     "FIXME"
 }
 
-fn part2(input: &str) -> impl Display {
+fn part2(puzzle_input: &str) -> &str {
     "FIXME"
 }
 
 fn main() {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).unwrap();
+    let mut puzzle_input = String::new();
+    io::stdin().read_to_string(&mut puzzle_input).unwrap();
 
-    println!("{}", part1(&input));
-    println!("{}", part2(&input));
+    println!("{}", part1(&puzzle_input));
+    println!("{}", part2(&puzzle_input));
 }
 
 #[cfg(test)]
