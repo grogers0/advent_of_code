@@ -95,7 +95,7 @@ fn build_map(mem_str: &str) -> HashMap<Pos, Square> {
     let (tx_out, rx_out) = channel();
 
     let mut mem = parse(mem_str);
-    thread::spawn(move || run(&mut mem, rx_in, tx_out));
+    thread::spawn(move || run(&mut mem, &rx_in, tx_out));
 
     let mut map = HashMap::new();
     let mut pos = Pos::origin();

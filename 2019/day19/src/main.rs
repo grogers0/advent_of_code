@@ -10,7 +10,7 @@ fn is_tractor(mut mem: Mem, x: usize, y: usize) -> bool {
     tx_in.send(x as i64).unwrap();
     tx_in.send(y as i64).unwrap();
 
-    run(&mut mem, rx_in, tx_out);
+    run(&mut mem, &rx_in, tx_out);
 
     match rx_out.recv().unwrap() {
         0 => false,

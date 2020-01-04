@@ -21,7 +21,7 @@ fn paint_panels(mem_str: &str, panels: &mut HashMap<(i64, i64), i64>) {
     let (tx_in, rx_in) = channel();
     let (tx_out, rx_out) = channel();
     let mut mem = parse(mem_str);
-    thread::spawn(move || run(&mut mem, rx_in, tx_out));
+    thread::spawn(move || run(&mut mem, &rx_in, tx_out));
 
     let mut pos = (0, 0);
     let mut dir = (0, -1);

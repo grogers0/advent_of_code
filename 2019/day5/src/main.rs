@@ -8,7 +8,7 @@ fn part1(mem_str: &str) -> impl Display {
     let (tx_in, rx_in) = channel();
     let (tx_out, rx_out) = channel();
     tx_in.send(1).unwrap();
-    run(&mut parse(mem_str), rx_in, tx_out);
+    run(&mut parse(mem_str), &rx_in, tx_out);
     let mut outputs = Vec::new();
     while let Ok(val) = rx_out.recv() {
         outputs.push(val);
@@ -24,7 +24,7 @@ fn part2(mem_str: &str) -> impl Display {
     let (tx_in, rx_in) = channel();
     let (tx_out, rx_out) = channel();
     tx_in.send(5).unwrap();
-    run(&mut parse(mem_str), rx_in, tx_out);
+    run(&mut parse(mem_str), &rx_in, tx_out);
     let output = rx_out.recv().unwrap();
     assert!(rx_out.recv().is_err());
     output

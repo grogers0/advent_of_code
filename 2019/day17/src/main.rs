@@ -114,7 +114,7 @@ fn snapshot_to_map(snapshot: &str) -> Map {
 
 fn take_snapshot(mem_str: &str) -> String {
     let (tx_out, rx_out) = channel();
-    run(&mut parse(mem_str), channel().1, tx_out);
+    run(&mut parse(mem_str), &channel().1, tx_out);
     let mut ret = String::new();
     while let Ok(val) = rx_out.recv() {
         ret.push(val as u8 as char);
@@ -248,7 +248,7 @@ fn part2(mem_str: &str) -> i64 {
     let (tx_out, rx_out) = channel();
     let mut mem = parse(mem_str);
     mem[0] = 2;
-    thread::spawn(move || run(&mut mem, rx_in, tx_out));
+    thread::spawn(move || run(&mut mem, &rx_in, tx_out));
     for line in &[main, a, b, c, video] {
         for ch in line.chars() {
             tx_in.send(ch as i64).unwrap();

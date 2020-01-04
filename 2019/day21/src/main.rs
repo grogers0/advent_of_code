@@ -9,7 +9,7 @@ fn springdroid(mut mem: Mem, commands: &str) -> i64 {
     let (tx_in, rx_in) = channel();
     let (tx_out, rx_out) = channel();
 
-    thread::spawn(move || run(&mut mem, rx_in, tx_out));
+    thread::spawn(move || run(&mut mem, &rx_in, tx_out));
 
     for ch in commands.trim().chars() {
         tx_in.send(ch as i64).unwrap();

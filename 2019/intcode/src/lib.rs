@@ -1,9 +1,19 @@
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, RecvError, Sender};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Mem(HashMap<usize, i64>);
+
+pub trait Input {
+    fn recv(&self) -> Result<i64, RecvError>;
+}
+
+impl Input for Receiver<i64> {
+    fn recv(&self) -> Result<i64, RecvError> {
+        Receiver::recv(self)
+    }
+}
 
 impl Index<usize> for Mem {
     type Output = i64;
@@ -67,7 +77,7 @@ fn inst(mem: &Mem, pc: usize) -> i64 {
     mem[pc] % 100
 }
 
-pub fn run(mem: &mut Mem, input: Receiver<i64>, output: Sender<i64>) {
+pub fn run(mem: &mut Mem, input: &dyn Input, output: Sender<i64>) {
     let mut pc = 0;
     let mut relative_base = 0;
     loop {
@@ -143,7 +153,7 @@ mod tests {
 
     fn run_no_io(mem_str: &str) -> Mem {
         let mut mem = parse(mem_str);
-        run(&mut mem, channel().1, channel().0);
+        run(&mut mem, &channel().1, channel().0);
         mem
     }
 
@@ -151,7 +161,7 @@ mod tests {
         let (tx_in, rx_in) = channel();
         let (tx_out, rx_out) = channel();
         tx_in.send(input).unwrap();
-        run(&mut parse(mem_str), rx_in, tx_out);
+        run(&mut parse(mem_str), &rx_in, tx_out);
         let output = rx_out.recv().unwrap();
         assert!(rx_out.recv().is_err());
         output
@@ -217,7 +227,7 @@ mod tests {
     fn test_day9_part1() {
         let ex_quine = "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99";
         let (tx_out, rx_out) = channel();
-        run(&mut parse(ex_quine), channel().1, tx_out);
+        run(&mut parse(ex_quine), &channel().1, tx_out);
         let mut quine_out = String::new();
         let mut first = true;
         while let Ok(v) = rx_out.recv() {
@@ -228,13 +238,13 @@ mod tests {
 
         let ex_16digit = "1102,34915192,34915192,7,4,7,99,0";
         let (tx_out, rx_out) = channel();
-        run(&mut parse(ex_16digit), channel().1, tx_out);
+        run(&mut parse(ex_16digit), &channel().1, tx_out);
         assert_eq!(format!("{}", rx_out.recv().unwrap()).len(), 16);
         assert!(rx_out.recv().is_err());
 
         let ex_middle = "104,1125899906842624,99";
         let (tx_out, rx_out) = channel();
-        run(&mut parse(ex_middle), channel().1, tx_out);
+        run(&mut parse(ex_middle), &channel().1, tx_out);
         assert_eq!(1125899906842624, rx_out.recv().unwrap());
         assert!(rx_out.recv().is_err());
     }
