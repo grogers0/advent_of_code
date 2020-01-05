@@ -12,6 +12,9 @@ function cd_to_root() {
         echo "error: Not inside the advent_of_code git repository" 1>&2
         exit 1
     fi
+    if [[ -s $year ]]; then
+        year=$(readlink $year)
+    fi
     echo $year
 }
 
