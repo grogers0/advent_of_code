@@ -11,10 +11,7 @@ fn springdroid(mut mem: Mem, commands: &str) -> i64 {
 
     thread::spawn(move || run(&mut mem, &rx_in, tx_out));
 
-    for ch in commands.trim().chars() {
-        tx_in.send(ch as i64).unwrap();
-    }
-    tx_in.send('\n' as i64).unwrap();
+    send_line(&tx_in, commands);
 
     let mut debug_output = String::new();
     while let Ok(val) = rx_out.recv() {

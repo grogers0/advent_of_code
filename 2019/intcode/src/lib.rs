@@ -143,6 +143,26 @@ pub fn run(mem: &mut Mem, input: &dyn Input, output: Sender<i64>) {
     }
 }
 
+pub fn send_line(tx: &Sender<i64>, line: &str) {
+    for ch in line.chars() {
+        tx.send(ch as i64).unwrap();
+    }
+    tx.send('\n' as i64).unwrap();
+}
+
+pub fn recv_line(rx: &Receiver<i64>) -> Result<String, RecvError> {
+    let mut ret = String::new();
+    loop {
+        let ch = rx.recv()? as u8 as char;
+        if ch == '\n' {
+            break
+        } else {
+            ret.push(ch);
+        }
+    }
+    Ok(ret)
+}
+
 
 #[cfg(test)]
 mod tests {

@@ -250,10 +250,7 @@ fn part2(mem_str: &str) -> i64 {
     mem[0] = 2;
     thread::spawn(move || run(&mut mem, &rx_in, tx_out));
     for line in &[main, a, b, c, video] {
-        for ch in line.chars() {
-            tx_in.send(ch as i64).unwrap();
-        }
-        tx_in.send('\n' as i64).unwrap();
+        send_line(&tx_in, line)
     }
     let mut ret = 0;
     while let Ok(val) = rx_out.recv() {
