@@ -6,4 +6,3 @@ edition = "2018"
 
 [dependencies]
 intcode = { path = "../intcode" }
-termion = "1.5"
