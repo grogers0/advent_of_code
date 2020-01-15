@@ -8,18 +8,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "day11-2019"
-version = "0.1.0"
-dependencies = [
- "ascii_bitmap 0.1.0",
- "intcode 0.1.0",
-]
-
-[[package]]
-name = "intcode"
-version = "0.1.0"
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

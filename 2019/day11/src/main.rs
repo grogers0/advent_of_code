@@ -17,10 +17,10 @@ fn panel_color(panels: &HashMap<(i64, i64), i64>, pos: (i64, i64)) -> i64 {
     *panels.get(&pos).unwrap_or(&0)
 }
 
-fn paint_panels(mem_str: &str, panels: &mut HashMap<(i64, i64), i64>) {
+fn paint_panels(puzzle_input: &str, panels: &mut HashMap<(i64, i64), i64>) {
     let (tx_in, rx_in) = channel();
     let (tx_out, rx_out) = channel();
-    let mut mem = parse(mem_str);
+    let mut mem = parse(puzzle_input);
     thread::spawn(move || run(&mut mem, &rx_in, tx_out));
 
     let mut pos = (0, 0);
@@ -39,17 +39,16 @@ fn paint_panels(mem_str: &str, panels: &mut HashMap<(i64, i64), i64>) {
     }
 }
 
-fn part1(mem_str: &str) -> usize {
+fn part1(puzzle_input: &str) -> usize {
     let mut panels = HashMap::new();
-    paint_panels(mem_str, &mut panels);
+    paint_panels(puzzle_input, &mut panels);
     panels.len()
 }
 
-// TODO - parse the pixel values into letters, also in day8
-fn part2(mem_str: &str) -> String {
+fn part2(puzzle_input: &str) -> String {
     let mut panels = HashMap::new();
     panels.insert((0,0), 1);
-    paint_panels(mem_str, &mut panels);
+    paint_panels(puzzle_input, &mut panels);
 
     let xmin = panels.iter().filter(|(_,c)| **c == 1).map(|((x,_),_)| *x).min().unwrap();
     let xmax = panels.iter().filter(|(_,c)| **c == 1).map(|((x,_),_)| *x).max().unwrap();
@@ -68,13 +67,14 @@ fn part2(mem_str: &str) -> String {
         }
         result.push('\n');
     }
-    result
+
+    ascii_bitmap::decode(&result).unwrap()
 }
 
 fn main() {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).unwrap();
+    let mut puzzle_input = String::new();
+    io::stdin().read_to_string(&mut puzzle_input).unwrap();
 
-    println!("{}", part1(&input));
-    println!("{}", part2(&input));
+    println!("{}", part1(&puzzle_input));
+    println!("{}", part2(&puzzle_input));
 }

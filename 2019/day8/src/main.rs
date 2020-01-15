@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::io::{self, Read};
 
 struct Image {
@@ -31,11 +30,11 @@ impl Image {
     }
 }
 
-fn parse(width: usize, height: usize, input: &str) -> Image {
-    let len = input.trim().len();
+fn parse(width: usize, height: usize, puzzle_input: &str) -> Image {
+    let len = puzzle_input.trim().len();
     let layers = len / width / height;
     assert_eq!(len, layers * width * height);
-    let data = input.trim().chars().map(|ch| ch.to_digit(10).unwrap() as u8).collect();
+    let data = puzzle_input.trim().chars().map(|ch| ch.to_digit(10).unwrap() as u8).collect();
     Image {
         width: width,
         height: height,
@@ -44,17 +43,17 @@ fn parse(width: usize, height: usize, input: &str) -> Image {
     }
 }
 
-fn part1(input: &str) -> impl Display {
-    let img = parse(25, 6, input);
+fn part1(puzzle_input: &str) -> usize {
+    let img = parse(25, 6, puzzle_input);
     let mut layers = (0..img.layers).collect::<Vec<_>>();
     layers.sort_by(|layer1, layer2| img.count_digits(*layer1, 0).cmp(&img.count_digits(*layer2, 0)));
     let layer = layers[0];
     img.count_digits(layer, 1) * img.count_digits(layer, 2)
 }
 
-fn part2(input: &str) -> impl Display {
-    let img = parse(25, 6, input);
-    let mut output = String::new();
+fn part2(puzzle_input: &str) -> String {
+    let img = parse(25, 6, puzzle_input);
+    let mut pixels = String::new();
     for y in 0..img.height {
         for x in 0..img.width {
             let px = match img.pixel_value(x, y) {
@@ -62,17 +61,18 @@ fn part2(input: &str) -> impl Display {
                 1 => '#',
                 _ => panic!()
             };
-            output.push(px);
+            pixels.push(px);
         }
-        output.push('\n');
+        pixels.push('\n');
     }
-    output
+
+    ascii_bitmap::decode(&pixels).unwrap()
 }
 
 fn main() {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).unwrap();
+    let mut puzzle_input = String::new();
+    io::stdin().read_to_string(&mut puzzle_input).unwrap();
 
-    println!("{}", part1(&input));
-    println!("{}", part2(&input));
+    println!("{}", part1(&puzzle_input));
+    println!("{}", part2(&puzzle_input));
 }
