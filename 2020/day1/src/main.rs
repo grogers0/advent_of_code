@@ -1,12 +1,11 @@
 use std::collections::HashSet;
 use std::io::{self, Read};
 
-fn parse_into_hashset(puzzle_input: &str) -> HashSet<u64> {
+fn parse(puzzle_input: &str) -> HashSet<u64> {
     puzzle_input.lines().map(|line| line.parse().unwrap()).collect()
 }
 
-fn part1(puzzle_input: &str) -> u64 {
-    let entries = parse_into_hashset(puzzle_input);
+fn part1(entries: &HashSet<u64>) -> u64 {
     for v1 in entries.iter() {
         if *v1 > 2020 { continue }
         let v2 = 2020 - v1;
@@ -17,8 +16,7 @@ fn part1(puzzle_input: &str) -> u64 {
     panic!()
 }
 
-fn part2(puzzle_input: &str) -> u64 {
-    let entries = parse_into_hashset(puzzle_input);
+fn part2(entries: &HashSet<u64>) -> u64 {
     for v1 in entries.iter() {
         for v2 in entries.iter() {
             if v1 == v2 || v1 + v2 > 2020 { continue }
@@ -34,9 +32,10 @@ fn part2(puzzle_input: &str) -> u64 {
 fn main() {
     let mut puzzle_input = String::new();
     io::stdin().read_to_string(&mut puzzle_input).unwrap();
+    let entries = parse(&puzzle_input);
 
-    println!("{}", part1(&puzzle_input));
-    println!("{}", part2(&puzzle_input));
+    println!("{}", part1(&entries));
+    println!("{}", part2(&entries));
 }
 
 #[cfg(test)]
@@ -52,11 +51,11 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(514579, part1(EX));
+        assert_eq!(514579, part1(&parse(EX)));
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(241861950, part2(EX));
+        assert_eq!(241861950, part2(&parse(EX)));
     }
 }
