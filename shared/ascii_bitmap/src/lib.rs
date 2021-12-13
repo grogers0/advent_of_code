@@ -68,7 +68,6 @@ lazy_static! {
 #....
 #....
 ####.".trim_start(), 'L');
-
         map.insert("
 .##..
 #..#.
@@ -90,7 +89,13 @@ lazy_static! {
 ###..
 #..#.
 #..#.".trim_start(), 'R');
-
+        map.insert("
+###..
+#..#.
+#..#.
+###..
+#.#..
+#..#.".trim_start(), 'R');
         map.insert("
 #..#.
 #..#.
@@ -98,7 +103,6 @@ lazy_static! {
 #..#.
 #..#.
 .##..".trim_start(), 'U');
-
         map.insert("
 ####.
 ...#.

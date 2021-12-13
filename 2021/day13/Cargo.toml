@@ -1,9 +1,8 @@
 [package]
-name = "day11-2019"
+name = "day13-2021"
 version = "0.1.0"
 authors = ["Greg Rogers <greg.r.rogers@gmail.com>"]
 edition = "2018"
 
 [dependencies]
 ascii_bitmap = { path = "../../shared/ascii_bitmap" }
-intcode = { path = "../intcode" }
