@@ -59,6 +59,8 @@ echo "Day $DAY $YEAR"
 cd_to_root &> /dev/null
 
 mkdir -p $YEAR/day$DAY/
+rm -f $YEAR/latest
+ln -s day$DAY $YEAR/latest
 cd $YEAR/day$DAY/
 mkdir -p src/
 if [ ! -f Cargo.toml ]; then
