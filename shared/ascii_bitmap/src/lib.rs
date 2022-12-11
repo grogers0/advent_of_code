@@ -27,6 +27,13 @@ lazy_static! {
 #....
 .###.".trim_start(), 'C');
         map.insert("
+.##..
+#..#.
+#....
+#....
+#..#.
+.##..".trim_start(), 'C');
+        map.insert("
 ###..
 #..#.
 #..#.
