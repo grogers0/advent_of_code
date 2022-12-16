@@ -18,6 +18,7 @@ impl Pos {
 struct Measurement {
     sensor: Pos,
     beacon: Pos,
+    sensor_range: i32,
 }
 
 
@@ -31,7 +32,7 @@ fn parse(puzzle_input: &str) -> Vec<Measurement> {
         let beacon_x = cap[3].parse().unwrap();
         let beacon_y = cap[4].parse().unwrap();
         let beacon = Pos::new(beacon_x, beacon_y);
-        Measurement { sensor, beacon }
+        Measurement { sensor, beacon, sensor_range: manhattan_dist(sensor, beacon) }
     }).collect()
 }
 
@@ -43,11 +44,9 @@ fn count_impossible_beacons(measurements: &[Measurement], row: i32) -> usize {
     // TODO - Could definitely use an interval set to speed this up, but it's good enough
     let mut xs = HashSet::new();
     for m in measurements {
-        let sensor_dist = manhattan_dist(m.sensor, m.beacon);
-        let row_dist = (row - m.sensor.y).abs();
-        let dist_diff = sensor_dist - row_dist;
-        if dist_diff >= 0 {
-            for x in (m.sensor.x - dist_diff)..=(m.sensor.x + dist_diff) {
+        let diff = m.sensor_range - (row - m.sensor.y).abs();
+        if diff >= 0 {
+            for x in (m.sensor.x - diff)..=(m.sensor.x + diff) {
                 xs.insert(x);
             }
         }
@@ -60,16 +59,52 @@ fn count_impossible_beacons(measurements: &[Measurement], row: i32) -> usize {
     xs.len()
 }
 
-fn find_distress_beacon(measurements: &[Measurement], max: i32) -> usize {
+fn in_range(meas: &Measurement, pos: Pos) -> bool {
+    manhattan_dist(meas.sensor, pos) <= meas.sensor_range
+}
 
-    0 // FIXME
+// Since there is a unique location, the distress beacon must be at the edge of some sensor's
+// range, so just iterate all those points and check if it satisfies the constraints
+fn find_distress_beacon(measurements: &[Measurement], max: i32) -> i64 {
+    let check_pos = |pos: Pos| -> bool {
+        pos.x >= 0 && pos.y >= 0 && pos.x <= max && pos.y <= max &&
+            !measurements.iter().any(|m| in_range(m, pos))
+    };
+    let tuning_freq = |pos: Pos| -> i64 {
+        pos.x as i64 * 4000000 + pos.y as i64
+    };
+
+    for m in measurements {
+        let mut pos = Pos::new(m.sensor.x, m.sensor.y - m.sensor_range - 1);
+        while pos.y < m.sensor.y {
+            if check_pos(pos) { return tuning_freq(pos); }
+            pos.x -= 1;
+            pos.y += 1;
+        }
+        while pos.x < m.sensor.x {
+            if check_pos(pos) { return tuning_freq(pos); }
+            pos.x += 1;
+            pos.y += 1;
+        }
+        while pos.y > m.sensor.y {
+            if check_pos(pos) { return tuning_freq(pos); }
+            pos.x += 1;
+            pos.y -= 1;
+        }
+        while pos.x > m.sensor.x {
+            if check_pos(pos) { return tuning_freq(pos); }
+            pos.x -= 1;
+            pos.y -= 1;
+        }
+    }
+    panic!()
 }
 
 fn part1(measurements: &[Measurement]) -> usize {
     count_impossible_beacons(measurements, 2000000)
 }
 
-fn part2(measurements: &[Measurement]) -> usize {
+fn part2(measurements: &[Measurement]) -> i64 {
     find_distress_beacon(measurements, 4000000)
 }
 
