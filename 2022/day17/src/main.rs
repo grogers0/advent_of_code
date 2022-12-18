@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::io::{self, Read};
 use std::ops::Add;
@@ -204,12 +205,14 @@ fn parse(puzzle_input: &str) -> Vec<Dir> {
     }).collect()
 }
 
-fn part1(puzzle_input: &str) -> usize {
-    let dirs = parse(puzzle_input);
-    let mut wind = Wind::new(&dirs);
+fn simulate(wind_dirs: &[Dir], num_rocks: u64) -> u64 {
+    let mut wind = Wind::new(&wind_dirs);
     let mut spawner = RockSpawner::new();
     let mut grid = Grid::new();
-    for _ in 0..2022 {
+    let mut seen = HashMap::<(usize, usize), Vec<(u64, u64)>>::new();
+    let mut extra_height = 0;
+    let mut iter = 0;
+    while iter < num_rocks {
         let mut rock = spawner.next(&grid);
         loop {
             rock.push(wind.next().as_offset(), &grid);
@@ -218,20 +221,44 @@ fn part1(puzzle_input: &str) -> usize {
                 break;
             }
         }
+        let iters = seen.entry((spawner.idx, wind.idx))
+            .and_modify(|iters| iters.push((iter, grid.height() as u64)))
+            .or_insert(vec![(iter, grid.height() as u64)]);
+        // Eventually a pattern will emerge. This is a heuristic that if the last N repeats are all
+        // the same, then all future repeats will be. In reality we would need to check the suffix
+        // of the grid, but this is easier. 2 seems to work for our input and the test case, so 4
+        // should be plenty conservative.
+        const REPS: usize = 4;
+        if iters.len() > REPS {
+            let stride_iters = iters[iters.len() - 1].0 - iters[iters.len() - 2].0;
+            let stride_height = iters[iters.len() - 1].1 - iters[iters.len() - 2].1;
+            if (2..=REPS).all(|i| stride_iters == iters[iters.len() - i].0 - iters[iters.len() - i - 1].0 &&
+                stride_height == iters[iters.len() - i].1 - iters[iters.len() - i - 1].1) {
+                let jump_cnt = (num_rocks - iter) / stride_iters;
+                iter += jump_cnt * stride_iters;
+                extra_height += jump_cnt * stride_height;
+            }
+        }
+        iter += 1;
     }
-    grid.height()
+    extra_height + grid.height() as u64
 }
 
-fn part2(puzzle_input: &str) -> &str {
-    "FIXME"
+fn part1(wind_dirs: &[Dir]) -> u64 {
+    simulate(wind_dirs, 2022)
+}
+
+fn part2(wind_dirs: &[Dir]) -> u64 {
+    simulate(wind_dirs, 1000000000000)
 }
 
 fn main() {
     let mut puzzle_input = String::new();
     io::stdin().read_to_string(&mut puzzle_input).unwrap();
 
-    println!("{}", part1(&puzzle_input));
-    println!("{}", part2(&puzzle_input));
+    let wind_dirs = parse(&puzzle_input);
+    println!("{}", part1(&wind_dirs));
+    println!("{}", part2(&wind_dirs));
 }
 
 #[cfg(test)]
@@ -242,11 +269,11 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(EX), 3068);
+        assert_eq!(part1(&parse(EX)), 3068);
     }
 
     #[test]
     fn test_part2() {
-        // FIXME
+        assert_eq!(part2(&parse(EX)), 1514285714288);
     }
 }
