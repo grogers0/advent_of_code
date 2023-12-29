@@ -1,12 +1,14 @@
+use std::collections::HashMap;
 use std::io::{self, Read};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 enum Condition {
     Damaged,
     Operational,
     Unknown,
 }
 
+#[derive(Debug)]
 struct ConditionRecord {
     conditions: Vec<Condition>,
     contiguous_damaged: Vec<usize>,
@@ -32,60 +34,74 @@ fn parse(puzzle_input: &str) -> Vec<ConditionRecord> {
     }).collect()
 }
 
-fn count_contiguous_no_unknowns(conditions: &[Condition]) -> Vec<usize> {
-    let mut contig_vec = Vec::new();
-    let mut curr_contig = 0;
-    for cond in conditions {
-        match cond {
-            Condition::Damaged => {
-                curr_contig += 1;
-            },
-            Condition::Operational => {
-                if curr_contig > 0 {
-                    contig_vec.push(curr_contig);
-                    curr_contig = 0;
-                }
-            },
-            Condition::Unknown => panic!(),
-        }
-    }
-    if curr_contig > 0 {
-        contig_vec.push(curr_contig);
-    }
-    contig_vec
-}
-
 fn count_arrangements(record: &ConditionRecord) -> u64 {
-    fn recur(conditions: &mut [Condition], expected_contig: &[usize], i: usize) -> u64 {
-        if i == conditions.len() {
-            if count_contiguous_no_unknowns(conditions) == expected_contig {
-                return 1;
-            } else {
-                return 0;
+    fn recur(conditions: &mut [Condition], mut expected_contiguous: &[usize], prior_contiguous: usize,
+        memo: &mut HashMap<(Vec<Condition>, Vec<usize>, usize), u64>) -> u64 {
+        if conditions.is_empty() {
+            if prior_contiguous > 0 {
+                if expected_contiguous.is_empty() {
+                    return 0;
+                } else if prior_contiguous != expected_contiguous[0] {
+                    return 0;
+                }
+                expected_contiguous = &expected_contiguous[1..];
             }
+            return if expected_contiguous.is_empty() { 1 } else { 0 };
+        } else if let Some(ret) = memo.get(&(conditions.to_vec(), expected_contiguous.to_vec(), prior_contiguous)) {
+            return *ret;
         }
-        if let Condition::Unknown = conditions[i] {
-            let mut sum = 0;
-            conditions[i] = Condition::Damaged;
-            sum += recur(conditions, expected_contig, i+1);
-            conditions[i] = Condition::Operational;
-            sum += recur(conditions, expected_contig, i+1);
-            conditions[i] = Condition::Unknown;
-            sum
-        } else {
-            recur(conditions, expected_contig, i+1)
-        }
+
+        let ret = match conditions[0] {
+            Condition::Damaged => recur(&mut conditions[1..], expected_contiguous, prior_contiguous + 1, memo),
+            Condition::Operational => {
+                if prior_contiguous > 0 {
+                    if expected_contiguous.is_empty() {
+                        return 0;
+                    } else if prior_contiguous != expected_contiguous[0] {
+                        return 0;
+                    }
+                    expected_contiguous = &expected_contiguous[1..];
+                }
+                recur(&mut conditions[1..], expected_contiguous, 0, memo)
+            },
+            Condition::Unknown => {
+                let mut sum = 0;
+                conditions[0] = Condition::Damaged;
+                sum += recur(conditions, expected_contiguous, prior_contiguous, memo);
+                conditions[0] = Condition::Operational;
+                sum += recur(conditions, expected_contiguous, prior_contiguous, memo);
+                conditions[0] = Condition::Unknown;
+                sum
+            },
+        };
+        memo.insert((conditions.to_vec(), expected_contiguous.to_vec(), prior_contiguous), ret);
+        ret
     }
     let mut conditions = record.conditions.clone();
-    recur(&mut conditions, &record.contiguous_damaged, 0)
+    let mut memo = HashMap::new();
+    recur(&mut conditions, &record.contiguous_damaged, 0, &mut memo)
 }
 
 fn part1(records: &[ConditionRecord]) -> u64 {
     records.iter().map(|record| count_arrangements(record)).sum()
 }
 
-fn part2(puzzle_input: &str) -> &str {
-    "FIXME"
+fn part2(records: &[ConditionRecord]) -> u64 {
+    let records: Vec<_> = records.iter().map(|record| {
+        let mut conditions = Vec::with_capacity(5 * record.conditions.len() + 4);
+        let mut contiguous_damaged = Vec::with_capacity(5 * record.contiguous_damaged.len());
+        for i in 0..5 {
+            if i > 0 { conditions.push(Condition::Unknown); }
+            for &c in &record.conditions {
+                conditions.push(c);
+            }
+            for &d in &record.contiguous_damaged {
+                contiguous_damaged.push(d);
+            }
+        }
+        ConditionRecord { conditions, contiguous_damaged }
+    }).collect();
+    records.iter().map(|record| count_arrangements(record)).sum()
 }
 
 fn main() {
@@ -94,7 +110,7 @@ fn main() {
 
     let records = parse(&puzzle_input);
     println!("{}", part1(&records));
-    println!("{}", part2(&puzzle_input));
+    println!("{}", part2(&records));
 }
 
 #[cfg(test)]
@@ -115,6 +131,6 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        // FIXME
+        assert_eq!(part2(&parse(EX)), 525152);
     }
 }
