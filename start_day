@@ -67,7 +67,7 @@ if [ ! -f Cargo.toml ]; then
 name = "day$DAY-$YEAR"
 version = "0.1.0"
 authors = ["$(git config user.name) <$(git config user.email)>"]
-edition = "2018"
+edition = "2024"
 
 [dependencies]
 EOF
