@@ -1,0 +1,47 @@
+use std::io::{self, Read};
+
+fn parse(puzzle_input: &str) -> Vec<u64> {
+    puzzle_input.split_whitespace().map(|s| s.parse::<u64>().unwrap()).collect()
+}
+
+fn iterate(stones_in: &[u64]) -> Vec<u64> {
+    let mut stones_out = vec![];
+    for stone in stones_in {
+
+    }
+    stones_out
+}
+
+fn part1(mut stones: Vec<u64>) -> usize {
+    for _ in 0..25 {
+        stones = iterate(&stones);
+    }
+}
+
+fn part2(puzzle_input: &str) -> &str {
+    "FIXME"
+}
+
+fn main() {
+    let mut puzzle_input = String::new();
+    io::stdin().read_to_string(&mut puzzle_input).unwrap();
+
+    let stones = parse(&puzzle_input);
+    println!("{}", part1(stones.clone()));
+    println!("{}", part2(&puzzle_input));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() {
+        assert_eq!(part1(parse("125 17")), 55312);
+    }
+
+    #[test]
+    fn test_part2() {
+        // FIXME
+    }
+}
