@@ -16,6 +16,10 @@ impl Dir {
             _ => panic!(),
         }
     }
+
+    fn offset(&self) -> usize {
+        match *self { Dir::L => 0, Dir::R => 1 }
+    }
 }
 
 struct Map {
@@ -46,29 +50,57 @@ fn part1(map: &Map) -> usize {
             return i;
         }
         let dir = map.dirs[i % map.dirs.len()];
-        let offset = match dir { Dir::L => 0, Dir::R => 1 };
-        curr = map.edges[&curr][offset].to_string();
+        curr = map.edges[&curr][dir.offset()].to_string();
     }
     unreachable!()
 }
 
-// FIXME - this is way to slow. Need a non-brute-force method
-fn part2(map: &Map) -> usize {
-    let mut keys: Vec<_> = map.edges.keys()
-        .filter(|key| key.ends_with("A"))
-        .map(|key| key.to_string())
-        .collect();
+fn gcd(mut a: u64, mut b: u64) -> u64 {
+    while b != 0 {
+        let remainder = a % b;
+        a = b;
+        b = remainder;
+    }
+    a
+}
+
+fn lcm(a: u64, b: u64) -> u64 {
+    (a / gcd(a, b)) * b
+}
+
+fn find_period(map: &Map, mut key: String) -> u64 {
+    let mut offset = 0;
     for i in 0.. {
-        if keys.iter().all(|key| key.ends_with("Z")) {
-            return i;
+        if key.ends_with("Z") {
+            if offset == 0 {
+                offset = i;
+            } else {
+                let period = i - offset;
+                // A peculiar quirk about the input is that the offset == period so we don't need
+                // anything complicated to track the offset and where they line up when the
+                // combined period is calculated. Also, the period for a given key is always the
+                // same, multiple keys ending in "Z" are not part of the same cycle.
+                assert_eq!(offset, period);
+                return period;
+            }
         }
-        let dir = map.dirs[i % map.dirs.len()];
-        let offset = match dir { Dir::L => 0, Dir::R => 1 };
-        for key in &mut keys {
-            *key = map.edges[key][offset].to_string();
-        }
+        let dir = map.dirs[i as usize % map.dirs.len()];
+        key = map.edges[&key][dir.offset()].to_string();
     }
     unreachable!()
+}
+
+fn part2(map: &Map) -> u64 {
+    let periods: Vec<_> = map.edges.keys()
+        .filter(|key| key.ends_with("Z"))
+        .map(|key| find_period(map, key.to_string()))
+        .collect();
+
+    let mut combined_period = 1;
+    for period in periods {
+        combined_period = lcm(combined_period, period);
+    }
+    combined_period
 }
 
 fn main() {
